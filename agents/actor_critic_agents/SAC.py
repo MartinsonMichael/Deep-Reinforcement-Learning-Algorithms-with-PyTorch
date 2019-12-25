@@ -1,4 +1,5 @@
 from agents.Base_Agent import Base_Agent
+from agents.actor_critic_agents.utils_continues import QNet, Policy
 from utilities.OU_Noise import OU_Noise
 from utilities.data_structures.Replay_Buffer import Replay_Buffer
 from torch.optim import Adam
@@ -22,22 +23,54 @@ class SAC(Base_Agent):
         assert self.action_types == "CONTINUOUS", "Action types must be continuous. Use SAC Discrete instead for discrete actions"
         assert self.config.hyperparameters["Actor"]["final_layer_activation"] != "Softmax", "Final actor layer must not be softmax"
         self.hyperparameters = config.hyperparameters
-        self.critic_local = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1, key_to_use="Critic")
-        self.critic_local_2 = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
-                                           key_to_use="Critic", override_seed=self.config.seed + 1)
+        # self.critic_local = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1, key_to_use="Critic")
+        # self.critic_local_2 = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
+        #                                    key_to_use="Critic", override_seed=self.config.seed + 1)
+        self.critic_local = QNet(
+            state_size=self.state_size,
+            action_size=self.action_size,
+            hidden_size=256,
+            device=self.device
+        )
+        self.critic_local_2 = QNet(
+            state_size=self.state_size,
+            action_size=self.action_size,
+            hidden_size=256,
+            device=self.device
+        )
+
         self.critic_optimizer = torch.optim.Adam(self.critic_local.parameters(),
                                                  lr=self.hyperparameters["Critic"]["learning_rate"], eps=1e-4)
         self.critic_optimizer_2 = torch.optim.Adam(self.critic_local_2.parameters(),
                                                    lr=self.hyperparameters["Critic"]["learning_rate"], eps=1e-4)
-        self.critic_target = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
-                                           key_to_use="Critic")
-        self.critic_target_2 = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
-                                            key_to_use="Critic")
+
+        self.critic_target = QNet(
+            state_size=self.state_size,
+            action_size=self.action_size,
+            hidden_size=256,
+            device=self.device,
+        )
+        self.critic_target_2 = QNet(
+            state_size=self.state_size,
+            action_size=self.action_size,
+            hidden_size=256,
+            device=self.device,
+        )
+        # self.critic_target = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
+        #                                    key_to_use="Critic")
+        # self.critic_target_2 = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
+        #                                     key_to_use="Critic")
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
         Base_Agent.copy_model_over(self.critic_local_2, self.critic_target_2)
         self.memory = Replay_Buffer(self.hyperparameters["Critic"]["buffer_size"], self.hyperparameters["batch_size"],
                                     self.config.seed)
-        self.actor_local = self.create_NN(input_dim=self.state_size, output_dim=self.action_size * 2, key_to_use="Actor")
+        # self.actor_local = self.create_NN(input_dim=self.state_size, output_dim=self.action_size * 2, key_to_use="Actor")
+        self.actor_local = Policy(
+            state_size=self.state_size,
+            action_size=self.action_size,
+            hidden_size=256,
+            device=self.device,
+        )
         self.actor_optimizer = torch.optim.Adam(self.actor_local.parameters(),
                                           lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4)
         self.automatic_entropy_tuning = self.hyperparameters["automatically_tune_entropy_hyperparameter"]
@@ -157,12 +190,12 @@ class SAC(Base_Agent):
          term is taken into account"""
         with torch.no_grad():
             next_state_action, next_state_log_pi, _ = self.produce_action_and_action_info(next_state_batch)
-            qf1_next_target = self.critic_target(torch.cat((next_state_batch, next_state_action), 1))
-            qf2_next_target = self.critic_target_2(torch.cat((next_state_batch, next_state_action), 1))
+            qf1_next_target = self.critic_target(next_state_batch, next_state_action)
+            qf2_next_target = self.critic_target_2(next_state_batch, next_state_action)
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
             next_q_value = reward_batch + (1.0 - mask_batch) * self.hyperparameters["discount_rate"] * (min_qf_next_target)
-        qf1 = self.critic_local(torch.cat((state_batch, action_batch), 1))
-        qf2 = self.critic_local_2(torch.cat((state_batch, action_batch), 1))
+        qf1 = self.critic_local(state_batch, action_batch)
+        qf2 = self.critic_local_2(state_batch, action_batch)
         qf1_loss = F.mse_loss(qf1, next_q_value)
         qf2_loss = F.mse_loss(qf2, next_q_value)
         return qf1_loss, qf2_loss
@@ -170,8 +203,8 @@ class SAC(Base_Agent):
     def calculate_actor_loss(self, state_batch):
         """Calculates the loss for the actor. This loss includes the additional entropy term"""
         action, log_pi, _ = self.produce_action_and_action_info(state_batch)
-        qf1_pi = self.critic_local(torch.cat((state_batch, action), 1))
-        qf2_pi = self.critic_local_2(torch.cat((state_batch, action), 1))
+        qf1_pi = self.critic_local(state_batch, action)
+        qf2_pi = self.critic_local_2(state_batch, action)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
         policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean()
         return policy_loss, log_pi

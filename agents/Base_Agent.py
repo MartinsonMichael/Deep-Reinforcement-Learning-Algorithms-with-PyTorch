@@ -60,7 +60,8 @@ class Base_Agent(object):
                 elif str(self.environment.unwrapped)[1:7] == "Hopper": return "Hopper"
                 elif str(self.environment.unwrapped)[1:9] == "Walker2d": return "Walker2d"
                 else:
-                    name = self.environment.spec.id.split("-")[0]
+                    name = 'lun'
+                    # name = self.environment.spec.id.split("-")[0]
             except AttributeError:
                 name = str(self.environment.env)
                 if name[0:10] == "TimeLimit<": name = name[10:]
@@ -99,6 +100,7 @@ class Base_Agent(object):
             return float("inf")
         try: return self.environment.unwrapped.reward_threshold
         except AttributeError:
+            return 200
             try:
                 return self.environment.spec.reward_threshold
             except AttributeError:
@@ -107,6 +109,11 @@ class Base_Agent(object):
     def get_trials(self):
         """Gets the number of trials to average a score over"""
         if self.environment_title in ["AntMaze", "FetchReach", "Hopper", "Walker2d", "CartPole"]: return 100
+
+        # quick fix
+        return 200
+
+
         try: return self.environment.unwrapped.trials
         except AttributeError: return self.environment.spec.trials
 
