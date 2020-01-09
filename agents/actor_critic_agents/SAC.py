@@ -13,36 +13,44 @@ LOG_SIG_MIN = -20
 TRAINING_EPISODES_PER_EVAL_EPISODE = 10
 EPSILON = 1e-6
 
+
 class SAC(Base_Agent):
     """Soft Actor-Critic model based on the 2018 paper https://arxiv.org/abs/1812.05905 and on this github implementation
       https://github.com/pranz24/pytorch-soft-actor-critic. It is an actor-critic algorithm where the agent is also trained
       to maximise the entropy of their actions as well as their cumulative reward"""
     agent_name = "SAC"
+
     def __init__(self, config):
         Base_Agent.__init__(self, config)
-        assert self.action_types == "CONTINUOUS", "Action types must be continuous. Use SAC Discrete instead for discrete actions"
-        assert self.config.hyperparameters["Actor"]["final_layer_activation"] != "Softmax", "Final actor layer must not be softmax"
+        assert self.action_types == "CONTINUOUS", "Action types must be continuous. Use SAC Discrete instead for " \
+                                                  "discrete actions "
+        assert self.config.hyperparameters["Actor"]["final_layer_activation"] != "Softmax", "Final actor layer must " \
+                                                                                            "not be softmax "
         self.hyperparameters = config.hyperparameters
-        # self.critic_local = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1, key_to_use="Critic")
-        # self.critic_local_2 = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
-        #                                    key_to_use="Critic", override_seed=self.config.seed + 1)
+
         self.critic_local = QNet(
             state_size=self.state_size,
             action_size=self.action_size,
             hidden_size=256,
-            device=self.device
+            device=self.device,
         )
         self.critic_local_2 = QNet(
             state_size=self.state_size,
             action_size=self.action_size,
             hidden_size=256,
-            device=self.device
+            device=self.device,
         )
 
-        self.critic_optimizer = torch.optim.Adam(self.critic_local.parameters(),
-                                                 lr=self.hyperparameters["Critic"]["learning_rate"], eps=1e-4)
-        self.critic_optimizer_2 = torch.optim.Adam(self.critic_local_2.parameters(),
-                                                   lr=self.hyperparameters["Critic"]["learning_rate"], eps=1e-4)
+        self.critic_optimizer = torch.optim.Adam(
+            self.critic_local.parameters(),
+            lr=self.hyperparameters["Critic"]["learning_rate"],
+            eps=1e-4,
+        )
+        self.critic_optimizer_2 = torch.optim.Adam(
+            self.critic_local_2.parameters(),
+            lr=self.hyperparameters["Critic"]["learning_rate"],
+            eps=1e-4,
+        )
 
         self.critic_target = QNet(
             state_size=self.state_size,
@@ -56,23 +64,25 @@ class SAC(Base_Agent):
             hidden_size=256,
             device=self.device,
         )
-        # self.critic_target = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
-        #                                    key_to_use="Critic")
-        # self.critic_target_2 = self.create_NN(input_dim=self.state_size + self.action_size, output_dim=1,
-        #                                     key_to_use="Critic")
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
         Base_Agent.copy_model_over(self.critic_local_2, self.critic_target_2)
-        self.memory = Replay_Buffer(self.hyperparameters["Critic"]["buffer_size"], self.hyperparameters["batch_size"],
-                                    self.config.seed)
-        # self.actor_local = self.create_NN(input_dim=self.state_size, output_dim=self.action_size * 2, key_to_use="Actor")
+        self.memory = Replay_Buffer(
+            self.hyperparameters["Critic"]["buffer_size"],
+            self.hyperparameters["batch_size"],
+            self.config.seed,
+
+        )
+
         self.actor_local = Policy(
             state_size=self.state_size,
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
         )
-        self.actor_optimizer = torch.optim.Adam(self.actor_local.parameters(),
-                                          lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4)
+        self.actor_optimizer = torch.optim.Adam(
+            self.actor_local.parameters(),
+            lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4
+        )
         self.automatic_entropy_tuning = self.hyperparameters["automatically_tune_entropy_hyperparameter"]
         if self.automatic_entropy_tuning:
             self.target_entropy = -torch.prod(torch.Tensor(self.environment.action_space.shape).to(self.device)).item() # heuristic value from the paper
@@ -119,11 +129,13 @@ class SAC(Base_Agent):
                 for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
                     self.learn()
             mask = False if self.episode_step_number_val >= self.environment._max_episode_steps else self.done
-            if not eval_ep: self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
+            if not eval_ep:
+                self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
             self.state = self.next_state
             self.global_step_number += 1
         print(self.total_episode_score_so_far)
-        if eval_ep: self.print_summary_of_latest_evaluation_episode()
+        if eval_ep:
+            self.print_summary_of_latest_evaluation_episode()
         self.episode_number += 1
 
     def pick_action(self, eval_ep, state=None):
@@ -183,7 +195,7 @@ class SAC(Base_Agent):
         self.update_all_parameters(qf1_loss, qf2_loss, policy_loss, alpha_loss)
 
     def sample_experiences(self):
-        return  self.memory.sample()
+        return self.memory.sample()
 
     def calculate_critic_losses(self, state_batch, action_batch, reward_batch, next_state_batch, mask_batch):
         """Calculates the losses for the two critics. This is the ordinary Q-learning loss except the additional entropy

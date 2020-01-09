@@ -3,11 +3,11 @@ import random
 import torch
 import numpy as np
 
+
 class Replay_Buffer(object):
     """Replay buffer to store past experiences that the agent can then use for training data"""
     
     def __init__(self, buffer_size, batch_size, seed):
-
         self.memory = deque(maxlen=buffer_size)
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
@@ -46,8 +46,10 @@ class Replay_Buffer(object):
         return states, actions, rewards, next_states, dones
     
     def pick_experiences(self, num_experiences=None):
-        if num_experiences is not None: batch_size = num_experiences
-        else: batch_size = self.batch_size
+        if num_experiences is not None:
+            batch_size = num_experiences
+        else:
+            batch_size = self.batch_size
         return random.sample(self.memory, k=batch_size)
 
     def __len__(self):

@@ -26,10 +26,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         'video.frames_per_second': FPS
     }
 
-    def __init__(self, settings_file_path=None):
-        if settings_file_path is None:
-            settings_file_path = 'envs/gym_car_intersect_fixed/settings_v2.json'
-
+    def __init__(self, settings_file_path):
         EzPickle.__init__(self)
         self._settings = json.load(open(settings_file_path))
 
