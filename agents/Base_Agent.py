@@ -6,7 +6,7 @@ import random
 import numpy as np
 import torch
 import time
-# import tensorflow as tf
+import tensorflow as tf
 from nn_builder.pytorch.NN import NN
 # from tensorboardX import SummaryWriter
 from torch.optim import optimizer
@@ -187,17 +187,24 @@ class Base_Agent(object):
         self.episode_next_states.append(self.next_state)
         self.episode_dones.append(self.done)
 
-    def run_n_episodes(self, num_episodes=None, show_whether_achieved_goal=True, save_and_print_results=True):
+    def run_n_episodes(self, num_episodes=None, show_whether_achieved_goal=True, save_and_print_results=True, tf_saver=None):
         """Runs game to completion n times and then summarises results and saves model (if asked to)"""
-        if num_episodes is None: num_episodes = self.config.num_episodes_to_run
+        if num_episodes is None:
+            num_episodes = self.config.num_episodes_to_run
         start = time.time()
         while self.episode_number < num_episodes:
             self.reset_game()
             self.step()
-            if save_and_print_results: self.save_and_print_result()
+            if save_and_print_results:
+                self.save_and_print_result()
+            if tf_saver is not None:
+                self.create_tf_charts(tf_saver)
+
         time_taken = time.time() - start
-        if show_whether_achieved_goal: self.show_whether_achieved_goal()
-        if self.config.save_model: self.locally_save_policy()
+        if show_whether_achieved_goal:
+            self.show_whether_achieved_goal()
+        if self.config.save_model:
+            self.locally_save_policy()
         return self.game_full_episode_scores, self.rolling_results, time_taken
 
     def conduct_action(self, action):
@@ -233,6 +240,12 @@ class Base_Agent(object):
         sys.stdout.write(text.format(len(self.game_full_episode_scores), self.rolling_results[-1], self.max_rolling_score_seen,
                                      self.game_full_episode_scores[-1], self.max_episode_score_seen))
         sys.stdout.flush()
+
+    def create_tf_charts(self, tf_writer):
+        with tf_writer.as_default():
+            episode = len(self.game_full_episode_scores)
+            tf.summary.scalar(name='score', data=self.rolling_results[-1], step=episode)
+            tf.summary.scalar(name='rolling score', data=self.game_full_episode_scores[-1], step=episode)
 
     def show_whether_achieved_goal(self):
         """Prints out whether the agent achieved the environment target goal"""

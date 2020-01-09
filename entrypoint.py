@@ -4,11 +4,11 @@ from os.path import dirname, abspath
 sys.path.append(dirname(dirname(abspath(__file__))))
 
 from agents.actor_critic_agents.SAC import SAC
-from agents.Trainer import Trainer
 from utilities.data_structures.Config import Config
 
 import chainerrl
-from envs.common_envs_utils.env_wrappers import *
+import tensorflow as tf
+from envs.common_envs_utils.env_wrappers import MaxAndSkipEnv, WarpFrame
 from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
 
 env = CarRacingHackatonContinuousFixed()
@@ -79,10 +79,28 @@ config.hyperparameters = {
 
 }
 
+
+def main(agent_title='test'):
+    if not os.path.exists(os.path.join('logs', agent_title)):
+        os.makedirs(os.path.join('logs', agent_title))
+    tf_writer = tf.summary.create_file_writer(os.path.join('logs', agent_title))
+    agent_config = config
+
+    # random.randint(0, 2 ** 32 - 2)
+    agent_config.seed = 42
+
+    agent_config.hyperparameters = agent_config.hyperparameters['Actor_Critic_Agents']
+    print("AGENT NAME: {}".format('SAC'))
+
+    agent = SAC(agent_config)
+
+    print(agent.hyperparameters)
+
+    print("RANDOM SEED ", agent_config.seed)
+
+    game_scores, rolling_scores, time_taken = agent.run_n_episodes(tf_saver=tf_writer)
+    print("Time taken: {}".format(time_taken), flush=True)
+
+
 if __name__ == "__main__":
-    AGENTS = [SAC]
-    trainer = Trainer(config, AGENTS)
-    trainer.run_games_for_agents()
-
-
-
+    main()
