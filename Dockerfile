@@ -22,3 +22,7 @@ RUN pip3 install --trusted-host pypi.python.org -r /tmp/pip.packages
 RUN mkdir /cars
 WORKDIR /cars
 COPY . ./
+VOLUME .
+
+EXPOSE 8093
+CMD ["tensorboard", "--logdir", "logs", "--port", "8093"]
