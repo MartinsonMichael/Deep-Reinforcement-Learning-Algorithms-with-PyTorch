@@ -243,9 +243,8 @@ class Base_Agent(object):
 
     def create_tf_charts(self, tf_writer):
         with tf_writer.as_default():
-            episode = len(self.game_full_episode_scores)
-            tf.summary.scalar(name='score', data=self.rolling_results[-1], step=episode)
-            tf.summary.scalar(name='rolling score', data=self.game_full_episode_scores[-1], step=episode)
+            tf.summary.scalar(name='score', data=self.rolling_results[-1], step=self.episode_number)
+            tf.summary.scalar(name='rolling score', data=self.game_full_episode_scores[-1], step=self.episode_number)
 
     def show_whether_achieved_goal(self):
         """Prints out whether the agent achieved the environment target goal"""

@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from os.path import dirname, abspath
@@ -80,7 +81,8 @@ config.hyperparameters = {
 }
 
 
-def main(agent_title='test'):
+def main(args):
+    agent_title = args.name
     if not os.path.exists(os.path.join('logs', agent_title)):
         os.makedirs(os.path.join('logs', agent_title))
     tf_writer = tf.summary.create_file_writer(os.path.join('logs', agent_title))
@@ -103,4 +105,7 @@ def main(agent_title='test'):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--name', type=str, default='test', help='name for experiment')
+    args = parser.parse_args()
+    main(args)
