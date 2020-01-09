@@ -15,6 +15,10 @@ RUN apt-get update \
 
 RUN pip3 install --upgrade pip
 COPY pip.packages /tmp/
-# RUN cat /tmp/pip.packages | xargs -n 1 pip3 install --trusted-host pypi.python.org
-
 RUN pip3 install --trusted-host pypi.python.org -r /tmp/pip.packages
+
+# PUT ALL CHANGES UNDER THIS LINE
+
+RUN mkdir /cars
+WORKDIR /cars
+COPY . ./
