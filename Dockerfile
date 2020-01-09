@@ -19,10 +19,11 @@ RUN pip3 install --trusted-host pypi.python.org -r /tmp/pip.packages
 
 # PUT ALL CHANGES UNDER THIS LINE
 
-RUN mkdir /cars
-WORKDIR /cars
-COPY . ./
-VOLUME .
-
 EXPOSE 8093
 CMD ["tensorboard", "--logdir", "logs", "--port", "8093"]
+
+RUN mkdir /cars
+WORKDIR /cars
+ADD . ./
+VOLUME logs
+
