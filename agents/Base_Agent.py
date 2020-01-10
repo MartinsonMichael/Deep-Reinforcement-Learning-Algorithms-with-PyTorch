@@ -211,7 +211,8 @@ class Base_Agent(object):
         """Conducts an action in the environment"""
         self.next_state, self.reward, self.done, _ = self.environment.step(action)
         self.total_episode_score_so_far += self.reward
-        if self.hyperparameters["clip_rewards"]: self.reward =  max(min(self.reward, 1.0), -1.0)
+        if self.hyperparameters["clip_rewards"]:
+            self.reward = max(min(self.reward, 1.0), -1.0)
 
 
     def save_and_print_result(self):
@@ -243,8 +244,8 @@ class Base_Agent(object):
 
     def create_tf_charts(self, tf_writer):
         with tf_writer.as_default():
-            tf.summary.scalar(name='score', data=self.rolling_results[-1], step=self.episode_number)
-            tf.summary.scalar(name='rolling score', data=self.game_full_episode_scores[-1], step=self.episode_number)
+            tf.summary.scalar(name='rolling score', data=self.rolling_results[-1], step=self.episode_number)
+            tf.summary.scalar(name='score', data=self.game_full_episode_scores[-1], step=self.episode_number)
 
     def show_whether_achieved_goal(self):
         """Prints out whether the agent achieved the environment target goal"""
