@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from os.path import dirname, abspath
+
 sys.path.append(dirname(dirname(abspath(__file__))))
 
 from agents.actor_critic_agents.SAC import SAC
@@ -38,31 +39,30 @@ def create_config(args):
     config.overwrite_existing_results_file = False
     config.randomise_random_seed = True
     config.save_model = True
+    config.max_episode_steps = 300
 
     config.hyperparameters = {
         "Actor_Critic_Agents": {
-                "Actor": {
-                    "learning_rate": 0.003,
-                    "linear_hidden_units": [20, 20],
-                    "final_layer_activation": None,
-                    "batch_norm": False,
-                    "tau": 0.005,
-                    "gradient_clipping_norm": 5,
-                    "initialiser": "Xavier"
-                },
-
-                "Critic": {
-                    "learning_rate": 0.02,
-                    "linear_hidden_units": [20, 20],
-                    "final_layer_activation": None,
-                    "batch_norm": False,
-                    "buffer_size": 1000000,
-                    "tau": 0.005,
-                    "gradient_clipping_norm": 5,
-                    "initialiser": "Xavier"
-                },
-
-            "min_steps_before_learning": 1000, #for SAC only
+            "Actor": {
+                "learning_rate": 0.003,
+                "linear_hidden_units": [20, 20],
+                "final_layer_activation": None,
+                "batch_norm": False,
+                "tau": 0.005,
+                "gradient_clipping_norm": 5,
+                "initialiser": "Xavier"
+            },
+            "Critic": {
+                "learning_rate": 0.02,
+                "linear_hidden_units": [20, 20],
+                "final_layer_activation": None,
+                "batch_norm": False,
+                "buffer_size": 200000,
+                "tau": 0.005,
+                "gradient_clipping_norm": 5,
+                "initialiser": "Xavier"
+            },
+            "min_steps_before_learning": 50000,
             "batch_size": 256,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
@@ -77,9 +77,7 @@ def create_config(args):
             "add_extra_noise": True,
             "do_evaluation_iterations": False,
             "clip_rewards": False
-
         }
-
     }
     return config
 

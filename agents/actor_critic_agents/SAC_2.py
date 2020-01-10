@@ -14,7 +14,7 @@ TRAINING_EPISODES_PER_EVAL_EPISODE = 10
 EPSILON = 1e-6
 
 
-class SAC(Base_Agent):
+class SAC_2(Base_Agent):
     """Soft Actor-Critic model based on the 2018 paper https://arxiv.org/abs/1812.05905 and on this github implementation
       https://github.com/pranz24/pytorch-soft-actor-critic. It is an actor-critic algorithm where the agent is also trained
       to maximise the entropy of their actions as well as their cumulative reward"""
@@ -128,12 +128,11 @@ class SAC(Base_Agent):
             if self.time_for_critic_and_actor_to_learn():
                 for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
                     self.learn()
-            mask = False if self.episode_step_number_val >= self.config.max_episode_steps else self.done
+            mask = False if self.episode_step_number_val >= self.environment._max_episode_steps else self.done
             if not eval_ep:
                 self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
             self.state = self.next_state
             self.global_step_number += 1
-            print(f'global steps : {self.global_step_number}')
         print(self.total_episode_score_so_far)
         if eval_ep:
             self.print_summary_of_latest_evaluation_episode()
