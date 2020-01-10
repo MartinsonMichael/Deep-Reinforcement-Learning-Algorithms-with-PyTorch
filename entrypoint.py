@@ -62,7 +62,7 @@ def create_config(args):
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
-            "min_steps_before_learning": 50000,
+            "min_steps_before_learning": 500,
             "batch_size": 256,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
