@@ -9,7 +9,7 @@
   "bots_tracks": [],
   "steer_policy": {
     "angle_steer": true,
-    "angle_steer_multiplication": 1.0
+    "angle_steer_multiplication": 10.0
   },
   "reward": {
     "is_collided": -0.01,
