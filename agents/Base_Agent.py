@@ -111,7 +111,7 @@ class Base_Agent(object):
         if self.environment_title in ["AntMaze", "FetchReach", "Hopper", "Walker2d", "CartPole"]: return 100
 
         # quick fix
-        return 200
+        return 100
 
 
         try: return self.environment.unwrapped.trials
@@ -187,14 +187,21 @@ class Base_Agent(object):
         self.episode_next_states.append(self.next_state)
         self.episode_dones.append(self.done)
 
-    def run_n_episodes(self, num_episodes=None, show_whether_achieved_goal=True, save_and_print_results=True, tf_saver=None):
+    def run_n_episodes(
+            self,
+            num_episodes=None,
+            show_whether_achieved_goal=True,
+            save_and_print_results=True,
+            tf_saver=None,
+            visualize=True,
+    ):
         """Runs game to completion n times and then summarises results and saves model (if asked to)"""
         if num_episodes is None:
             num_episodes = self.config.num_episodes_to_run
         start = time.time()
         while self.episode_number < num_episodes:
             self.reset_game()
-            self.step()
+            self.step(visualize if self.episode_number % 5 == 0 else False)
             if save_and_print_results:
                 self.save_and_print_result()
             if tf_saver is not None:

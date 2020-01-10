@@ -26,7 +26,7 @@ def create_config(args):
     config = Config()
     config.seed = 1
     config.environment = create_env(args.env_settings)
-    config.num_episodes_to_run = 450
+    config.num_episodes_to_run = 500
     config.file_to_save_data_results = 'result_cars'
     config.file_to_save_results_graph = 'graph_cars'
     config.show_solution_score = True
@@ -75,7 +75,7 @@ def create_config(args):
             "automatically_tune_entropy_hyperparameter": True,
             "entropy_term_weight": None,
             "add_extra_noise": True,
-            "do_evaluation_iterations": True,
+            "do_evaluation_iterations": False,
             "clip_rewards": False
 
         }
@@ -90,6 +90,7 @@ def main(args):
         os.makedirs(os.path.join('logs', agent_title))
     tf_writer = tf.summary.create_file_writer(os.path.join('logs', agent_title))
     agent_config = create_config(args)
+    agent_config.name = agent_title
 
     # random.randint(0, 2 ** 32 - 2)
     agent_config.seed = 42
@@ -103,7 +104,7 @@ def main(args):
 
     print("RANDOM SEED ", agent_config.seed)
 
-    game_scores, rolling_scores, time_taken = agent.run_n_episodes(tf_saver=tf_writer)
+    game_scores, rolling_scores, time_taken = agent.run_n_episodes(tf_saver=tf_writer, visualize=True)
     print("Time taken: {}".format(time_taken), flush=True)
 
 

@@ -117,7 +117,7 @@ class SAC(Base_Agent):
         Base_Agent.reset_game(self)
         if self.add_extra_noise: self.noise.reset()
 
-    def step(self):
+    def step(self, visualize=False):
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
         eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
         self.episode_step_number_val = 0
@@ -137,6 +137,14 @@ class SAC(Base_Agent):
         if eval_ep:
             self.print_summary_of_latest_evaluation_episode()
         self.episode_number += 1
+
+        if visualize:
+            from envs.common_envs_utils import episode_visualizer
+            episode_visualizer(
+                env=self.environment,
+                action_picker=lambda state: self.actor_pick_action(state, eval=True),
+                name=self.config.name,
+            )
 
     def pick_action(self, eval_ep, state=None):
         """Picks an action using one of three methods: 1) Randomly if we haven't passed a certain number of steps,
