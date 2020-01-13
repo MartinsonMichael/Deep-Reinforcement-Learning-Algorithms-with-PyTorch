@@ -1,7 +1,7 @@
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.utils_continues import QNet, Policy
 from utilities.OU_Noise import OU_Noise
-from utilities.data_structures.Replay_Buffer import Replay_Buffer
+from utilities.data_structures.Extended_Replay_Buffer import Extended_Replay_Buffer
 from torch.optim import Adam
 import torch
 import torch.nn.functional as F
@@ -29,13 +29,13 @@ class SAC(Base_Agent):
         self.hyperparameters = config.hyperparameters
 
         self.critic_local = QNet(
-            state_size=self.state_size,
+            state_description=self.config.environment.get_state_description(),
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
         )
         self.critic_local_2 = QNet(
-            state_size=self.state_size,
+            state_description=self.config.environment.get_state_description(),
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
@@ -53,20 +53,20 @@ class SAC(Base_Agent):
         )
 
         self.critic_target = QNet(
-            state_size=self.state_size,
+            state_description=self.config.environment.get_state_description(),
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
         )
         self.critic_target_2 = QNet(
-            state_size=self.state_size,
+            state_description=self.config.environment.get_state_description(),
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
         )
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
         Base_Agent.copy_model_over(self.critic_local_2, self.critic_target_2)
-        self.memory = Replay_Buffer(
+        self.memory = Extended_Replay_Buffer(
             self.hyperparameters["Critic"]["buffer_size"],
             self.hyperparameters["batch_size"],
             self.config.seed,
@@ -74,7 +74,7 @@ class SAC(Base_Agent):
         )
 
         self.actor_local = Policy(
-            state_size=self.state_size,
+            state_description=self.config.environment.get_state_description(),
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,

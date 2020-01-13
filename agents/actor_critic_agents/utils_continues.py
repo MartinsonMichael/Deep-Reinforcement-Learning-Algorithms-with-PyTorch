@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -46,48 +48,66 @@ class PictureProcessor(nn.Module):
         return self.forward(torch.Tensor(np.zeros((1, *input_shape)))).shape[1]
 
 
+class StateLayer(nn.Module):
+    def __init__(self, state_description: Dict[str, Any], hidden_size, device):
+        super(StateLayer, self).__init__()
+        self._device = device
+
+        self._picture_layer = None
+        self._vector_layer = None
+
+        self._state_layer_out_size = 0
+        if 'picture' in state_description.keys() and state_description['picture'] is not None:
+            self._picture_layer = PictureProcessor()
+            self._state_layer_out_size += self._dense_s.get_out_shape_for_in(
+                state_description['picture']
+            )
+
+        if 'vector' in state_description.keys() and state_description['vector'] is not None:
+            self._vector_layer = nn.Linear(in_features=state_description['vector'], out_features=hidden_size)
+            torch.nn.init.xavier_uniform_(self._vector_layer.weight)
+            torch.nn.init.constant_(self._vector_layer.bias, 0)
+            self._state_layer_out_size += hidden_size
+
+    def get_out_shape_for_in(self):
+        return self._state_layer_out_sizes
+
+    def forward(self, state):
+        state_pic = None
+        if self._picture_layer is not None:
+            state_pic = self._picture_layer(state['picture'] / 256)
+
+        state_vec = None
+        if self._vector_layer is not None:
+            state_vec = self._vector_layer(state['vector'])
+
+        if state_vec is not None and state_pic is not None:
+            return torch.cat((state_pic, state_vec), dim=1)
+
+        if state_pic is not None:
+            return state_pic
+
+        if state_vec is not None:
+            return state_vec
+
+        raise ValueError("state should be Dict['picture' : tensor or None, 'vector' : tensor or None]")
+
+
 class QNet(nn.Module):
-    def __init__(self, state_size, action_size, hidden_size, device):
+    def __init__(self, state_description: Dict[str, Any], action_size, hidden_size, device):
         super(QNet, self).__init__()
         self._device = device
 
-        state_size = (3, 84, 84)
-
-        self.is_picture_input = None
-        if isinstance(state_size, tuple):
-            if state_size.__len__() == 3:
-                self.is_picture_input = True
-            elif state_size.__len__() == 1:
-                state_size = state_size[0]
-                self.is_picture_input = False
-            else:
-                raise ValueError(f'state size dont understood, it is tuple and have {len(state_size)} dims')
-        elif isinstance(state_size, int):
-            self.is_picture_input = False
-        else:
-            raise ValueError(f'state size dont understood, expected types int or tuple, have {type(state_size)}')
-
-        if isinstance(action_size, tuple):
-            if action_size.__len__() > 1:
-                raise ValueError('action shape doesnt understood')
-            action_size = action_size[0]
-        elif not isinstance(action_size, int):
-            raise ValueError('action shape doesnt understood')
-
-        if self.is_picture_input:
-            self._dense_s = PictureProcessor()
-            self._state_layer_out_size = self._dense_s.get_out_shape_for_in(state_size)
-        else:
-            self._dense_s = nn.Linear(in_features=state_size, out_features=hidden_size)
-            torch.nn.init.xavier_uniform_(self._dense_s.weight)
-            torch.nn.init.constant_(self._dense_s.bias, 0)
-            self._state_layer_out_size = hidden_size
+        self._state_layer = StateLayer(state_description, hidden_size, device)
 
         self._dense_a = nn.Linear(in_features=action_size, out_features=hidden_size)
         torch.nn.init.xavier_uniform_(self._dense_a.weight)
         torch.nn.init.constant_(self._dense_a.bias, 0)
 
-        self._dense2 = nn.Linear(in_features=hidden_size + self._state_layer_out_size, out_features=hidden_size)
+        self._dense2 = nn.Linear(
+            in_features=hidden_size + self._state_layer.get_out_shape_for_in,
+            out_features=hidden_size,
+        )
         torch.nn.init.xavier_uniform_(self._dense2.weight)
         torch.nn.init.constant_(self._dense2.bias, 0)
 
@@ -96,7 +116,7 @@ class QNet(nn.Module):
         torch.nn.init.constant_(self._head1.bias, 0)
 
     def forward(self, state, action):
-        s = F.relu(self._dense_s(state / 255))
+        s = F.relu(self._state_layer(state))
         a = F.relu(self._dense_a(action))
         x = torch.cat((s, a), 1)
         x = F.relu(self._dense2(x))
@@ -105,44 +125,14 @@ class QNet(nn.Module):
 
 
 class Policy(nn.Module):
-    def __init__(self, state_size, action_size, hidden_size, device):
+    def __init__(self, state_description: Dict[str, Any], action_size, hidden_size, device):
         super(Policy, self).__init__()
         self._device = device
         self._action_size = action_size
 
-        state_size = (3, 84, 84)
+        self._state_layer = StateLayer(state_description, hidden_size, device)
 
-        self.is_picture_input = None
-        if isinstance(state_size, tuple):
-            if state_size.__len__() == 3:
-                self.is_picture_input = True
-            elif state_size.__len__() == 1:
-                state_size = state_size[0]
-                self.is_picture_input = False
-            else:
-                raise ValueError(f'state size dont understood, it is tuple and have {len(state_size)} dims')
-        elif isinstance(state_size, int):
-            self.is_picture_input = False
-        else:
-            raise ValueError(f'state size dont understood, expected types int or tuple, have {type(state_size)}')
-
-        if isinstance(action_size, tuple):
-            if action_size.__len__() > 1:
-                raise ValueError('action shape doesnt understood')
-            action_size = action_size[0]
-        elif not isinstance(action_size, int):
-            raise ValueError('action shape doesnt understood')
-
-        if self.is_picture_input:
-            self._dense1 = PictureProcessor()
-            self._state_layer_out_size = self._dense1.get_out_shape_for_in(state_size)
-        else:
-            self._dense1 = nn.Linear(in_features=state_size, out_features=hidden_size)
-            torch.nn.init.xavier_uniform_(self._dense1.weight)
-            torch.nn.init.constant_(self._dense1.bias, 0)
-            self._state_layer_out_size = hidden_size
-
-        self._dense2 = nn.Linear(in_features=self._state_layer_out_size, out_features=hidden_size)
+        self._dense2 = nn.Linear(in_features=self._state_layer.get_out_shape_for_in, out_features=hidden_size)
         torch.nn.init.xavier_uniform_(self._dense2.weight)
         torch.nn.init.constant_(self._dense2.bias, 0)
 
@@ -151,7 +141,7 @@ class Policy(nn.Module):
         torch.nn.init.constant_(self._head.bias, 0)
 
     def forward(self, state):
-        x = F.relu(self._dense1(state / 255))
+        x = F.relu(self._state_layer(state))
         x = F.relu(self._dense2(x))
         x = self._head(x)
         return x

@@ -4,6 +4,7 @@ import Box2D
 import cv2
 import gym
 import numpy as np
+import torch
 
 from gym import spaces
 from gym.utils import seeding, EzPickle
@@ -31,8 +32,6 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self._settings = json.load(open(settings_file_path))
 
         # load env resources
-        import os
-
         self._data_loader = DataSupporter(self._settings)
 
         # init world
@@ -236,10 +235,31 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         info.update(self.car.stats)
 
         self._was_done = done
-        return self.state, step_reward, done, info
+        return self._create_state(), step_reward, done, info
 
-    def get_true_state(self):
+    def _create_state(self):
+        full_state = {
+            'picture': self.state if self.get_state_description()['picture'] is not None else None,
+            'vector': self.car.get_vector_state() if len(self._data_loader.get_car_features_list) != 0 else None,
+        }
+        if ('convert_to_torch_tensors' in self._settings['state_config'].keys() and
+                self._settings['state_config']['convert_to_torch_tensors']):
+            for state_part_name in full_state.keys():
+                full_state[state_part_name] = torch.from_numpy(full_state[state_part_name])
+        return full_state
+
+    def get_true_picture(self):
         return self.state
+
+    def get_state_description(self):
+        return {
+            'picture': self._data_loader.get_state_picture_shape,
+            'vector':
+                len(self._data_loader.get_car_features_list)
+                if len(self._data_loader.get_car_features_list) != 0
+                else None
+            ,
+        }
 
     def render(self, mode='human') -> np.array:
         background_image = self._data_loader.get_background()
