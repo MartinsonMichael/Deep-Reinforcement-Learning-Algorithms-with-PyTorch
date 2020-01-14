@@ -169,14 +169,13 @@ class SAC(Base_Agent):
     def update_stats_due_to_step_info(self, info, reward, done):
         if not done:
             return
-        game_stats = {}
         if 'is_finish' in info.keys():
             if info['is_finish']:
                 self._game_stats['finished'] = 1
             else:
                 self._game_stats['finished'] = 0
         if 'time' in info.keys():
-            game_stats['env steps taken'] = info['time']
+            self._game_stats['env steps taken'] = info['time']
 
     def create_tf_charts(self, tf_writer):
         with tf_writer.as_default():
@@ -196,7 +195,8 @@ class SAC(Base_Agent):
         """Picks an action using one of three methods: 1) Randomly if we haven't passed a certain number of steps,
          2) Using the actor in evaluation mode if eval_ep is True  3) Using the actor in training mode if eval_ep is False.
          The difference between evaluation and training mode is that training mode does more exploration"""
-        if state is None: state = self.state
+        if state is None:
+            state = self.state
         if eval_ep:
             action = self.actor_pick_action(state=state, eval=True)
         elif self.global_step_number < self.hyperparameters["min_steps_before_learning"]:

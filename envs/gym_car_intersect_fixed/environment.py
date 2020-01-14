@@ -9,7 +9,6 @@ import torch
 from gym import spaces
 from gym.utils import seeding, EzPickle
 
-
 from envs.gym_car_intersect_fixed.car import DummyCar
 from envs.gym_car_intersect_fixed.contact_listner import RefactoredContactListener
 from envs.gym_car_intersect_fixed.rewards import Rewarder
@@ -239,7 +238,14 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self._was_done = done
         return self._create_state(), step_reward, done, info
 
-    def _create_state(self) -> Dict[str, Union[None, np.ndarray]]:
+    def _create_state(self) -> Union[np.ndarray, Dict[str, Union[None, np.ndarray]]]:
+        if 'return_pure_vector' in self._settings['state_config'].keys() and \
+                self._settings['state_config']['return_pure_vector']:
+            if self.get_state_description()['picture'] is not None:
+                return self.picture_state
+            else:
+                return self.car.get_vector_state()
+
         return {
             'picture': self.picture_state if self.get_state_description()['picture'] is not None else None,
             'vector': self.car.get_vector_state() if len(self._data_loader.car_features_list) != 0 else None,
@@ -357,16 +363,16 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
 
         # finally crop car mask and car image, and insert them to background
         cropped_mask = (car_mask_image[
-           mask_start_y: mask_end_y,
-           mask_start_x: mask_end_x,
-           :,
-        ] > 240)
+                        mask_start_y: mask_end_y,
+                        mask_start_x: mask_end_x,
+                        :,
+                        ] > 240)
 
         cropped_image = (
             masked_image[
-                mask_start_y: mask_end_y,
-                mask_start_x: mask_end_x,
-                :,
+            mask_start_y: mask_end_y,
+            mask_start_x: mask_end_x,
+            :,
             ]
         )
         # back = background_image[start_y:end_y, start_x:end_x, :]
@@ -416,11 +422,11 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         )
 
     def debug_draw_polygon(self,
-            background_image,
-            polygon: np.array,
-            point_size: int = 10,
-            color='red',
-    ):
+                           background_image,
+                           polygon: np.array,
+                           point_size: int = 10,
+                           color='red',
+                           ):
         x, y = polygon.exterior.coords.xy
         for point in zip(x, y):
             CarRacingHackatonContinuousFixed.debug_draw_sized_point(
@@ -449,7 +455,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         for dx in range(int(-size / 2), int(size / 2) + 1, 1):
             for dy in range(int(-size / 2), int(size / 2) + 1, 1):
                 background_image[
-                    int(np.clip(y + dy, 0, background_image.shape[0] - 1)),
-                    int(np.clip(x + dx, 0, background_image.shape[1] - 1)),
-                    :,
+                int(np.clip(y + dy, 0, background_image.shape[0] - 1)),
+                int(np.clip(x + dx, 0, background_image.shape[1] - 1)),
+                :,
                 ] = color
