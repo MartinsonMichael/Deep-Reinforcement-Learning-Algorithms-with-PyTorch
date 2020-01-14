@@ -172,9 +172,9 @@ class SAC(Base_Agent):
         game_stats = {}
         if 'is_finish' in info.keys():
             if info['is_finish']:
-                game_stats['finished'] = 1
+                self._game_stats['finished'] = 1
             else:
-                game_stats['finished'] = 0
+                self._game_stats['finished'] = 0
         if 'time' in info.keys():
             game_stats['env steps taken'] = info['time']
 
