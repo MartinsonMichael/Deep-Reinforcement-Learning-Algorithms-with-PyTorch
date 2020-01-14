@@ -219,11 +219,14 @@ class Base_Agent(object):
 
     def conduct_action(self, action):
         """Conducts an action in the environment"""
-        self.next_state, self.reward, self.done, _ = self.environment.step(action)
+        self.next_state, self.reward, self.done, info = self.environment.step(action)
+        self.update_stats_due_to_step_info(info, self.reward, self.done)
         self.total_episode_score_so_far += self.reward
         if self.hyperparameters["clip_rewards"]:
             self.reward = max(min(self.reward, 1.0), -1.0)
 
+    def update_stats_due_to_step_info(self, info, reward, done):
+        pass
 
     def save_and_print_result(self):
         """Saves and prints results of the game"""

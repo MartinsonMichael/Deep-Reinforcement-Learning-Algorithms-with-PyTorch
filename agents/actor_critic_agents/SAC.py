@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Normal
 import numpy as np
+import tensorflow as tf
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
@@ -106,6 +107,7 @@ class SAC(Base_Agent):
                                   self.hyperparameters["theta"], self.hyperparameters["sigma"])
 
         self.do_evaluation_iterations = self.hyperparameters["do_evaluation_iterations"]
+        self._game_stats = {}
 
     def save_result(self):
         """Saves the result of an episode of the game. Overriding the method in Base Agent that does this because we only
@@ -126,7 +128,9 @@ class SAC(Base_Agent):
     def reset_game(self):
         """Resets the game information so we are ready to play a new episode"""
         Base_Agent.reset_game(self)
-        if self.add_extra_noise: self.noise.reset()
+        if self.add_extra_noise:
+            self.noise.reset()
+        self._game_stats = {}
 
     def step(self, visualize=False):
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
@@ -161,6 +165,32 @@ class SAC(Base_Agent):
                 action_picker=lambda state: self.actor_pick_action(state, eval=True),
                 name=self.config.name,
             )
+
+    def update_stats_due_to_step_info(self, info, reward, done):
+        if not done:
+            return
+        game_stats = {}
+        if 'is_finish' in info.keys():
+            if info['is_finish']:
+                game_stats['finished'] = 1
+            else:
+                game_stats['finished'] = 0
+        if 'time' in info.keys():
+            game_stats['env steps taken'] = info['time']
+
+    def create_tf_charts(self, tf_writer):
+        with tf_writer.as_default():
+            tf.summary.scalar(
+                name='rolling score',
+                data=np.array(self.game_full_episode_scores[-7:]).mean(),
+                step=self.episode_number
+            )
+            tf.summary.scalar(name='score', data=self.game_full_episode_scores[-1], step=self.episode_number)
+            for name, value in self._game_stats.items():
+                if 'loss' in name and self.episode_step_number_val > 0:
+                    value /= self.episode_step_number_val
+                    name = 'average ' + name
+                tf.summary.scalar(name=name, data=value, step=self.episode_number)
 
     def pick_action(self, eval_ep, state=None):
         """Picks an action using one of three methods: 1) Randomly if we haven't passed a certain number of steps,
@@ -273,6 +303,17 @@ class SAC(Base_Agent):
 
     def update_all_parameters(self, critic_loss_1, critic_loss_2, actor_loss, alpha_loss):
         """Updates the parameters for the actor, both critics and (if specified) the temperature parameter"""
+
+        for loss_name, loss_value in [
+            ('q1 loss', critic_loss_1),
+            ('q2 loss', critic_loss_2),
+            ('policy loss', actor_loss),
+            ('temperature loss', alpha_loss),
+        ]:
+            if loss_name not in self._game_stats.keys():
+                self._game_stats[loss_name] = 0.0
+            self._game_stats[loss_name] += loss_value.cpu().detach().numpy()
+
         self.take_optimisation_step(
             self.critic_optimizer,
             self.critic_local,
