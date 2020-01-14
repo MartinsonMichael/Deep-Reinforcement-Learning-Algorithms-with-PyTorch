@@ -53,7 +53,6 @@ class Extended_Replay_Buffer(object):
 
         if 'vector' in states.keys():
             states_extra = states['vector']
-            print(f'add states_extra of type : {type(states_extra)}')
             if isinstance(states_extra, torch.Tensor):
                 states_extra = states_extra.cpu().detach().numpy()[0]
 
@@ -61,11 +60,7 @@ class Extended_Replay_Buffer(object):
             if isinstance(next_states_extra, torch.Tensor):
                 next_states_extra = next_states_extra.cpu().detach().numpy()[0]
 
-        print('two lines about dones:')
-        print(type(dones))
-        print(dones)
         if type(dones) == list or (type(dones) == np.ndarray and len(dones.shape) > 1):
-            print('add many')
 
             assert type(dones[0]) != list, "A done shouldn't be a list"
             experiences = [
@@ -75,7 +70,6 @@ class Extended_Replay_Buffer(object):
             ]
             self.memory.extend(experiences)
         else:
-            print(f'from save -> state_extra : {states_extra}')
             experience = self.experience(
                 states_picture,
                 states_extra,
@@ -88,7 +82,6 @@ class Extended_Replay_Buffer(object):
             self.memory.append(experience)
    
     def sample(self, num_experiences=None, separate_out_data_types=True):
-        print('SAMPLE')
         """Draws a random sample of experience from the replay buffer"""
         experiences = self.pick_experiences(num_experiences)
         if separate_out_data_types:
@@ -105,36 +98,36 @@ class Extended_Replay_Buffer(object):
             
     def separate_out_data_types(self, experiences):
         """Puts the sampled experience into the correct format for a PyTorch neural network"""
-        try:
-            if self.mode == ReplayBufferMode.only_pictures:
-                states_picture = torch.from_numpy(np.array([e.state_picture for e in experiences])).float().to(self.device)
-                next_states_picture = torch.from_numpy(np.array([e.next_state_picture for e in experiences])).float().to(
-                    self.device)
-                states_extra = None
-                next_states_extra = None
+        # try:
+        if self.mode == ReplayBufferMode.only_pictures:
+            states_picture = torch.from_numpy(np.array([e.state_picture for e in experiences])).float().to(self.device)
+            next_states_picture = torch.from_numpy(np.array([e.next_state_picture for e in experiences])).float().to(
+                self.device)
+            states_extra = None
+            next_states_extra = None
 
-            if self.mode == ReplayBufferMode.only_vectors:
-                states_extra = torch.from_numpy(np.array([e.state_extra for e in experiences])).float().to(self.device)
-                next_states_extra = torch.from_numpy(np.array([e.next_state_extra for e in experiences])).float().to(
-                    self.device)
-                states_picture = None
-                next_states_picture = None
+        if self.mode == ReplayBufferMode.only_vectors:
+            states_extra = torch.from_numpy(np.array([e.state_extra for e in experiences])).float().to(self.device)
+            next_states_extra = torch.from_numpy(np.array([e.next_state_extra for e in experiences])).float().to(
+                self.device)
+            states_picture = None
+            next_states_picture = None
 
-            if self.mode == ReplayBufferMode.both:
-                states_picture = torch.from_numpy(np.array([e.state_picture for e in experiences])).float().to(self.device)
-                next_states_picture = torch.from_numpy(np.array([e.next_state_picture for e in experiences])).float().to(
-                    self.device)
-                states_extra = torch.from_numpy(np.array([e.state_extra for e in experiences])).float().to(self.device)
-                next_states_extra = torch.from_numpy(np.array([e.next_state_extra for e in experiences])).float().to(
-                    self.device)
+        if self.mode == ReplayBufferMode.both:
+            states_picture = torch.from_numpy(np.array([e.state_picture for e in experiences])).float().to(self.device)
+            next_states_picture = torch.from_numpy(np.array([e.next_state_picture for e in experiences])).float().to(
+                self.device)
+            states_extra = torch.from_numpy(np.array([e.state_extra for e in experiences])).float().to(self.device)
+            next_states_extra = torch.from_numpy(np.array([e.next_state_extra for e in experiences])).float().to(
+                self.device)
 
-            actions = torch.from_numpy(np.vstack([e.action for e in experiences])).float().to(self.device)
-            rewards = torch.from_numpy(np.vstack([e.reward for e in experiences])).float().to(self.device)
-            dones = torch.from_numpy(np.vstack([int(e.done) for e in experiences])).float().to(self.device)
-        except:
-            print('Hi, we just have failed to build torch batch from replay buffer')
-            print('state_extra')
-            print([e.state_extra for e in experiences])
+        actions = torch.from_numpy(np.vstack([e.action for e in experiences])).float().to(self.device)
+        rewards = torch.from_numpy(np.vstack([e.reward for e in experiences])).float().to(self.device)
+        dones = torch.from_numpy(np.vstack([int(e.done) for e in experiences])).float().to(self.device)
+        # except:
+        #     print('Hi, we just have failed to build torch batch from replay buffer')
+        #     print('state_extra:')
+        #     print([e.state_extra for e in experiences])
 
         return states_picture, states_extra, actions, rewards, next_states_picture, next_states_extra, dones
     
