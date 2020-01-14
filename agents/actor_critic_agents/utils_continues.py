@@ -74,15 +74,7 @@ class StateLayer(nn.Module):
     def get_out_shape_for_in(self):
         return self._state_layer_out_size
 
-    def forward(self, state_obj: Dict[str, Union[np.array, torch.FloatTensor]]):
-        state = {}
-        for state_name, state_value in state_obj.items():
-            if state_value is None:
-                continue
-            if type(state_value) is np.ndarray:
-                state[state_name] = torch.from_numpy(state_value)
-            else:
-                state_value[state_value] = state_value
+    def forward(self, state: Dict[str, Union[np.array, torch.FloatTensor]]):
 
         state_pic = None
         if self._picture_layer is not None:

@@ -1,7 +1,7 @@
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.utils_continues import QNet, Policy
 from utilities.OU_Noise import OU_Noise
-from utilities.data_structures.Extended_Replay_Buffer import Extended_Replay_Buffer
+from utilities.data_structures.Extended_Replay_Buffer import Extended_Replay_Buffer, ReplayBufferMode
 from torch.optim import Adam
 import torch
 import torch.nn.functional as F
@@ -66,11 +66,18 @@ class SAC(Base_Agent):
         )
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
         Base_Agent.copy_model_over(self.critic_local_2, self.critic_target_2)
+
+        replay_buffer_mode = ReplayBufferMode.both
+        if self.config.environment.get_state_description()['picture'] is None:
+            replay_buffer_mode = ReplayBufferMode.only_vectors
+        elif self.config.environment.get_state_description()['vector'] is None:
+            replay_buffer_mode = ReplayBufferMode.only_pictures
+
         self.memory = Extended_Replay_Buffer(
             self.hyperparameters["Critic"]["buffer_size"],
             self.hyperparameters["batch_size"],
             self.config.seed,
-
+            mode=replay_buffer_mode,
         )
 
         self.actor_local = Policy(
@@ -85,7 +92,8 @@ class SAC(Base_Agent):
         )
         self.automatic_entropy_tuning = self.hyperparameters["automatically_tune_entropy_hyperparameter"]
         if self.automatic_entropy_tuning:
-            self.target_entropy = -torch.prod(torch.Tensor(self.environment.action_space.shape).to(self.device)).item() # heuristic value from the paper
+            self.target_entropy = -torch.prod(torch.Tensor(self.environment.action_space.shape).to(
+                self.device)).item()  # heuristic value from the paper
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha = self.log_alpha.exp()
             self.alpha_optim = Adam([self.log_alpha], lr=self.hyperparameters["Actor"]["learning_rate"], eps=1e-4)
@@ -108,8 +116,11 @@ class SAC(Base_Agent):
             self.save_max_result_seen()
 
         elif (self.episode_number - 1) % TRAINING_EPISODES_PER_EVAL_EPISODE == 0:
-            self.game_full_episode_scores.extend([self.total_episode_score_so_far for _ in range(TRAINING_EPISODES_PER_EVAL_EPISODE)])
-            self.rolling_results.extend([np.mean(self.game_full_episode_scores[-1 * self.rolling_score_window:]) for _ in range(TRAINING_EPISODES_PER_EVAL_EPISODE)])
+            self.game_full_episode_scores.extend(
+                [self.total_episode_score_so_far for _ in range(TRAINING_EPISODES_PER_EVAL_EPISODE)])
+            self.rolling_results.extend(
+                [np.mean(self.game_full_episode_scores[-1 * self.rolling_score_window:]) for _ in
+                 range(TRAINING_EPISODES_PER_EVAL_EPISODE)])
             self.save_max_result_seen()
 
     def reset_game(self):
@@ -122,15 +133,22 @@ class SAC(Base_Agent):
         eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
         self.episode_step_number_val = 0
         while not self.done:
+
+            print('\n\nstep\n')
+
             self.episode_step_number_val += 1
             self.action = self.pick_action(eval_ep)
             self.conduct_action(self.action)
+
             if self.time_for_critic_and_actor_to_learn():
                 for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
                     self.learn()
             mask = False if self.episode_step_number_val >= self.config.max_episode_steps else self.done
             if not eval_ep:
-                self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
+                # self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
+                self.memory.add_experience(
+                    self.state, self.action, self.reward, self.next_state, mask
+                )
             self.state = self.next_state
             self.global_step_number += 1
             print(f'global steps : {self.global_step_number}')
@@ -152,7 +170,8 @@ class SAC(Base_Agent):
          2) Using the actor in evaluation mode if eval_ep is True  3) Using the actor in training mode if eval_ep is False.
          The difference between evaluation and training mode is that training mode does more exploration"""
         if state is None: state = self.state
-        if eval_ep: action = self.actor_pick_action(state=state, eval=True)
+        if eval_ep:
+            action = self.actor_pick_action(state=state, eval=True)
         elif self.global_step_number < self.hyperparameters["min_steps_before_learning"]:
             action = self.environment.action_space.sample()
             print("Picking random action ", action)
@@ -166,10 +185,21 @@ class SAC(Base_Agent):
         """Uses actor to pick an action in one of two ways: 1) If eval = False and we aren't in eval mode then it picks
         an action that has partly been randomly sampled 2) If eval = True then we pick the action that comes directly
         from the network and so did not involve any random sampling"""
-        if state is None: state = self.state
-        state = torch.FloatTensor([state]).to(self.device)
-        if len(state.shape) == 1: state = state.unsqueeze(0)
-        if eval == False: action, _, _ = self.produce_action_and_action_info(state)
+        if state is None:
+            state = self.state
+        if type(state) == dict:
+            for name in state.keys():
+                if state[name] is not None:
+                    if len(state[name].shape) == 1 or len(state[name].shape) == 3:
+                        state[name] = torch.FloatTensor([state[name]]).to(self.device)
+                    else:
+                        state[name] = torch.FloatTensor(state[name]).to(self.device)
+        else:
+            if len(state.shape) == 1:
+                state = state.unsqueeze(0)
+
+        if eval == False:
+            action, _, _ = self.produce_action_and_action_info(state)
         else:
             with torch.no_grad():
                 _, z, action = self.produce_action_and_action_info(state)
@@ -182,7 +212,7 @@ class SAC(Base_Agent):
         mean, log_std = actor_output[:, :self.action_size], actor_output[:, self.action_size:]
         std = log_std.exp()
         normal = Normal(mean, std)
-        x_t = normal.rsample()  #rsample means it is sampled using reparameterisation trick
+        x_t = normal.rsample()  # rsample means it is sampled using reparameterisation trick
         action = torch.tanh(x_t)
         log_prob = normal.log_prob(x_t)
         log_prob -= torch.log(1 - action.pow(2) + EPSILON)
@@ -193,15 +223,16 @@ class SAC(Base_Agent):
         """Returns boolean indicating whether there are enough experiences to learn from and it is time to learn for the
         actor and critic"""
         return (
-            self.global_step_number > self.hyperparameters["min_steps_before_learning"] and
-            self.enough_experiences_to_learn_from() and
-            self.global_step_number % self.hyperparameters["update_every_n_steps"] == 0
+                self.global_step_number > self.hyperparameters["min_steps_before_learning"] and
+                self.enough_experiences_to_learn_from() and
+                self.global_step_number % self.hyperparameters["update_every_n_steps"] == 0
         )
 
     def learn(self):
         """Runs a learning iteration for the actor, both critics and (if specified) the temperature parameter"""
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch = self.sample_experiences()
-        qf1_loss, qf2_loss = self.calculate_critic_losses(state_batch, action_batch, reward_batch, next_state_batch, mask_batch)
+        qf1_loss, qf2_loss = self.calculate_critic_losses(state_batch, action_batch, reward_batch, next_state_batch,
+                                                          mask_batch)
         policy_loss, log_pi = self.calculate_actor_loss(state_batch)
         if self.automatic_entropy_tuning:
             alpha_loss = self.calculate_entropy_tuning_loss(log_pi)
@@ -220,7 +251,8 @@ class SAC(Base_Agent):
             qf1_next_target = self.critic_target(next_state_batch, next_state_action)
             qf2_next_target = self.critic_target_2(next_state_batch, next_state_action)
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
-            next_q_value = reward_batch + (1.0 - mask_batch) * self.hyperparameters["discount_rate"] * (min_qf_next_target)
+            next_q_value = reward_batch + (1.0 - mask_batch) * self.hyperparameters["discount_rate"] * (
+                min_qf_next_target)
         qf1 = self.critic_local(state_batch, action_batch)
         qf2 = self.critic_local_2(state_batch, action_batch)
         qf1_loss = F.mse_loss(qf1, next_q_value)

@@ -16,7 +16,7 @@ from envs.gym_car_intersect_fixed.rewards import Rewarder
 
 from envs.gym_car_intersect_fixed.utils import DataSupporter
 from shapely import geometry
-from typing import List, Union
+from typing import List, Union, Dict
 
 FPS = 60
 
@@ -50,7 +50,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self.bot_cars = []
 
         # init gym properties
-        self.state = np.zeros_like(self._data_loader.get_background(), dtype=np.uint8)
+        self.picture_state = np.zeros_like(self._data_loader.get_background(), dtype=np.uint8)
         self.action_space = spaces.Box(
             low=np.array([-1.0, -1.0, -1.0]),
             high=np.array([+1.0, +1.0, +1.0]),
@@ -64,6 +64,8 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         )
         self._preseted_agent_track = None
         self._preseted_render_mode = 'human'
+
+        self.reset()
 
     def set_render_mode(self, mode):
         self._preseted_render_mode = mode
@@ -228,7 +230,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         if len(self.bot_cars) < self.num_bots:
             self.create_bot_car()
 
-        self.state = self.render(self._preseted_render_mode)
+        self.picture_state = self.render(self._preseted_render_mode)
 
         done = self.rewarder.get_step_done(self.car.stats)
         step_reward = self.rewarder.get_step_reward(self.car.stats)
@@ -237,26 +239,20 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self._was_done = done
         return self._create_state(), step_reward, done, info
 
-    def _create_state(self):
-        full_state = {
-            'picture': self.state if self.get_state_description()['picture'] is not None else None,
+    def _create_state(self) -> Dict[str, Union[None, np.ndarray]]:
+        return {
+            'picture': self.picture_state if self.get_state_description()['picture'] is not None else None,
             'vector': self.car.get_vector_state() if len(self._data_loader.car_features_list) != 0 else None,
         }
-        if ('convert_to_torch_tensors' in self._settings['state_config'].keys() and
-                self._settings['state_config']['convert_to_torch_tensors']):
-            for state_part_name in full_state.keys():
-                if full_state[state_part_name] is not None:
-                    full_state[state_part_name] = torch.from_numpy(full_state[state_part_name])
-        return full_state
 
     def get_true_picture(self):
-        return self.state
+        return self.picture_state
 
     def get_state_description(self):
         return {
             'picture': self._data_loader.get_state_picture_shape,
             'vector':
-                len(self._data_loader.car_features_list)
+                len(self.car.get_vector_state())
                 if len(self._data_loader.car_features_list) != 0
                 else None
             ,

@@ -18,7 +18,7 @@
   "state_config": {
     "convert_to_torch_tensors": false,
     "picture": null,
-    "vector_car_features": ["coordinates"]
+    "vector_car_features": ["hull_position"]
   },
   "reward": {
     "is_collided": -0.01,

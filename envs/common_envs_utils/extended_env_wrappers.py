@@ -17,6 +17,7 @@ class ExtendedMaxAndSkipEnv(gym.Wrapper):
         done = None
         info = None
         obs = None
+        self._obs_buffer = []
         for _ in range(self._skip):
             obs, reward, done, info = self.env.step(action)
             if obs['picture'] is not None:
