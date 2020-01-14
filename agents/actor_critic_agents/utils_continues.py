@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 import numpy as np
 import torch
@@ -56,6 +56,8 @@ class StateLayer(nn.Module):
         self._picture_layer = None
         self._vector_layer = None
 
+        print(f'state layer : {state_description}')
+
         self._state_layer_out_size = 0
         if 'picture' in state_description.keys() and state_description['picture'] is not None:
             self._picture_layer = PictureProcessor()
@@ -70,9 +72,18 @@ class StateLayer(nn.Module):
             self._state_layer_out_size += hidden_size
 
     def get_out_shape_for_in(self):
-        return self._state_layer_out_sizes
+        return self._state_layer_out_size
 
-    def forward(self, state):
+    def forward(self, state_obj: Dict[str, Union[np.array, torch.FloatTensor]]):
+        state = {}
+        for state_name, state_value in state_obj.items():
+            if state_value is None:
+                continue
+            if type(state_value) is np.ndarray:
+                state[state_name] = torch.from_numpy(state_value)
+            else:
+                state_value[state_value] = state_value
+
         state_pic = None
         if self._picture_layer is not None:
             state_pic = self._picture_layer(state['picture'] / 256)
@@ -105,7 +116,7 @@ class QNet(nn.Module):
         torch.nn.init.constant_(self._dense_a.bias, 0)
 
         self._dense2 = nn.Linear(
-            in_features=hidden_size + self._state_layer.get_out_shape_for_in,
+            in_features=hidden_size + self._state_layer.get_out_shape_for_in(),
             out_features=hidden_size,
         )
         torch.nn.init.xavier_uniform_(self._dense2.weight)
@@ -132,7 +143,7 @@ class Policy(nn.Module):
 
         self._state_layer = StateLayer(state_description, hidden_size, device)
 
-        self._dense2 = nn.Linear(in_features=self._state_layer.get_out_shape_for_in, out_features=hidden_size)
+        self._dense2 = nn.Linear(in_features=self._state_layer.get_out_shape_for_in(), out_features=hidden_size)
         torch.nn.init.xavier_uniform_(self._dense2.weight)
         torch.nn.init.constant_(self._dense2.bias, 0)
 

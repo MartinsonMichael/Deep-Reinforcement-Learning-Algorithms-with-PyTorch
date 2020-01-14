@@ -63,9 +63,9 @@ class DataSupporter:
         # print(f'play field shape: {self._playfield_size}')
 
     @property
-    def get_car_features_list(self) -> List[str]:
-        if 'vector_features' in self._settings['state_config'].keys():
-            return self._settings['state_config']['vector_features']
+    def car_features_list(self) -> List[str]:
+        if 'vector_car_features' in self._settings['state_config'].keys():
+            return self._settings['state_config']['vector_car_features']
         return []
 
     @property

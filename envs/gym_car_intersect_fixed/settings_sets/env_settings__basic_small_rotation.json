@@ -16,9 +16,9 @@
     "angle_steer_multiplication": 5.0
   },
   "state_config": {
-    "convert_to_torch_tensors": true,
+    "convert_to_torch_tensors": false,
     "picture": null,
-    "vector_car_features": ["coordinates"],
+    "vector_car_features": ["coordinates"]
   },
   "reward": {
     "is_collided": -0.01,

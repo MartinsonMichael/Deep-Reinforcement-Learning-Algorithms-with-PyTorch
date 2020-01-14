@@ -240,12 +240,13 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
     def _create_state(self):
         full_state = {
             'picture': self.state if self.get_state_description()['picture'] is not None else None,
-            'vector': self.car.get_vector_state() if len(self._data_loader.get_car_features_list) != 0 else None,
+            'vector': self.car.get_vector_state() if len(self._data_loader.car_features_list) != 0 else None,
         }
         if ('convert_to_torch_tensors' in self._settings['state_config'].keys() and
                 self._settings['state_config']['convert_to_torch_tensors']):
             for state_part_name in full_state.keys():
-                full_state[state_part_name] = torch.from_numpy(full_state[state_part_name])
+                if full_state[state_part_name] is not None:
+                    full_state[state_part_name] = torch.from_numpy(full_state[state_part_name])
         return full_state
 
     def get_true_picture(self):
@@ -255,8 +256,8 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         return {
             'picture': self._data_loader.get_state_picture_shape,
             'vector':
-                len(self._data_loader.get_car_features_list)
-                if len(self._data_loader.get_car_features_list) != 0
+                len(self._data_loader.car_features_list)
+                if len(self._data_loader.car_features_list) != 0
                 else None
             ,
         }

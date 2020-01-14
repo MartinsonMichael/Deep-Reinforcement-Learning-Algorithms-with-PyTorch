@@ -199,10 +199,10 @@ class DummyCar:
     def get_vector_state(self):
         state = []
 
-        if 'hull_position' in self.data_loader.get_car_features_list():
+        if 'hull_position' in self.data_loader.car_features_list:
             state.extend([self._hull.position.x, self._hull.position.y])
 
-        if 'hull_angle' in self.data_loader.get_car_features_list():
+        if 'hull_angle' in self.data_loader.car_features_list:
             state.extend([np.sin(self._hull.angle), np.cos(self._hull.angle)])
 
         return np.array(state)
