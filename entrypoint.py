@@ -27,7 +27,7 @@ def create_config(args):
     config = Config()
     config.seed = 1
     config.environment = create_env(args.env_settings)
-    config.num_episodes_to_run = 500
+    config.num_episodes_to_run = 1500
     config.file_to_save_data_results = 'result_cars'
     config.file_to_save_results_graph = 'graph_cars'
     config.show_solution_score = True
@@ -62,7 +62,7 @@ def create_config(args):
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
-            "min_steps_before_learning": 500,
+            "min_steps_before_learning": 50000,
             "batch_size": 256,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
