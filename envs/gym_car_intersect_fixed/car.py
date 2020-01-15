@@ -200,7 +200,10 @@ class DummyCar:
         state = []
 
         if 'hull_position' in self.data_loader.car_features_list:
-            state.extend([self._hull.position.x, self._hull.position.y])
+            state.extend([
+                self._hull.position.x / self.data_loader.playfield_size[0],
+                self._hull.position.y / self.data_loader.playfield_size[1],
+            ])
 
         if 'hull_angle' in self.data_loader.car_features_list:
             state.extend([np.sin(self._hull.angle), np.cos(self._hull.angle)])
@@ -216,11 +219,11 @@ class DummyCar:
         return self._hull.angle * 180 / np.pi
 
     @property
-    def position_PLAY(self) -> np.array:
+    def position_PLAY(self) -> np.ndarray:
         return np.array([self._hull.position.x, self._hull.position.y])
 
     @property
-    def position_IMG(self) -> np.array:
+    def position_IMG(self) -> np.ndarray:
         return self.data_loader.convertPLAY2IMG(self.position_PLAY)
 
     @property
@@ -228,14 +231,14 @@ class DummyCar:
         return self._state_data
 
     @property
-    def wheels_positions_PLAY(self) -> np.array:
+    def wheels_positions_PLAY(self) -> np.ndarray:
         return np.array([
             np.array([wheel.position.x, wheel.position.y])
             for wheel in self.wheels
         ])
 
     @property
-    def wheels_position_IMG(self) -> np.array:
+    def wheels_position_IMG(self) -> np.ndarray:
         return self.data_loader.convertPLAY2IMG(self.wheels_positions_PLAY)
 
     def _is_car_closely_to(self, point, threshold=0.5) -> bool:

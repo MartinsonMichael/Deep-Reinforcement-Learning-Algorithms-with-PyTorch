@@ -1,9 +1,11 @@
 import json
 
+
 class Rewarder:
     """
     Class to define reward policy.
     """
+
     def __init__(self, settings):
         self._settings = settings
         self._settings_reward = settings['reward']
@@ -30,6 +32,11 @@ class Rewarder:
         step_reward += car_stats['new_tiles_count'] * self._settings_reward['new_tiles_count']
         step_reward += car_stats['speed'] * self._settings_reward['speed_per_point']
         step_reward += car_stats['time'] * self._settings_reward['time_per_point']
+
+        if 'if_speed_more_then_threshold' in self._settings_reward.keys() and \
+                'speed_threshold' in self._settings_reward.keys():
+            if car_stats['speed'] > self._settings_reward['speed_threshold']:
+                step_reward += self._settings_reward['if_speed_more_then_threshold']
 
         for is_item in ['is_collided', 'is_finish', 'is_out_of_track', 'is_out_of_map', 'is_out_of_road']:
             if car_stats[is_item]:
