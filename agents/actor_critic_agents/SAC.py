@@ -164,7 +164,7 @@ class SAC(Base_Agent):
             self.print_summary_of_latest_evaluation_episode()
         self.episode_number += 1
 
-        if visualize:
+        if visualize and self.global_step_number > self.hyperparameters["min_steps_before_learning"]:
             from envs.common_envs_utils import episode_visualizer
             episode_visualizer(
                 env=self.environment,
