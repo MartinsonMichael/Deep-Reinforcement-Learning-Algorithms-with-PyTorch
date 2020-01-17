@@ -17,7 +17,7 @@
   },
   "state_config": {
     "return_pure_vector": false,
-    "picture": null,
+    "picture": [3, 84, 84],
     "vector_car_features": [
       "hull_position",
       "hull_angle",
