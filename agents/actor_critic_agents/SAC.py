@@ -184,7 +184,7 @@ class SAC(Base_Agent):
         if 'time' in info.keys():
             self._game_stats['env steps taken'] = info['time']
 
-        self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()
+        self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()[0]
 
     def create_tf_charts(self, tf_writer):
         if self.global_step_number < self.hyperparameters['min_steps_before_learning']:
