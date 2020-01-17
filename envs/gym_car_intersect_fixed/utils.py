@@ -13,10 +13,10 @@ class CarImage(NamedTuple):
     image: np.ndarray
     mask: np.ndarray
     real_image: np.ndarray
-    real_size: np.ndarray
+    real_size: np.array
     car_image_center_displacement: np.ndarray
-    size: np.ndarray
-    center: np.ndarray
+    size: np.array
+    center: np.array
     hashable_obj: str
 
 
@@ -83,11 +83,16 @@ class DataSupporter:
         return len(self._cars)
 
     @property
-    def playfield_size(self) -> np.ndarray:
+    def playfield_size(self) -> np.array:
         return self._playfield_size
 
+    def set_playfield_size(self, size: np.array):
+        if size.shape != (2,):
+            raise ValueError
+        self._playfield_size = size
+
     @staticmethod
-    def convert_XY2YX(points: np.ndarray):
+    def convert_XY2YX(points: np.array):
         if len(points.shape) == 2:
             return np.array([points[:, 1], points[:, 0]]).T
         if points.shape == (2, ):
@@ -107,12 +112,12 @@ class DataSupporter:
         track_obj['line'] = func(track_obj['line'])
         return track_obj
 
-    def convertIMG2PLAY(self, points: Union[np.ndarray, Tuple[float, float]]) -> np.ndarray:
+    def convertIMG2PLAY(self, points: Union[np.array, Tuple[float, float]]) -> np.array:
         """
         Convert points from IMG pixel coordinate to pyBox2D coordinate.
         NOTE! This function doesn't flip Y to -Y, just scale coordinates.
-        :param points: np.ndarray
-        :return: np.ndarray
+        :param points: np.array
+        :return: np.array
         """
         points = np.array(points)
         if len(points.shape) == 1:
@@ -120,12 +125,12 @@ class DataSupporter:
         else:
             return np.array([self._convertXY_IMG2PLAY(coords) for coords in points])
 
-    def convertPLAY2IMG(self, points: Union[np.ndarray, Tuple[float, float]]) -> np.ndarray:
+    def convertPLAY2IMG(self, points: Union[np.array, Tuple[float, float]]) -> np.array:
         """
         Convert points from pyBox2D coordinate to IMG pixel coordinate.
         NOTE! This function doesn't flip Y to -Y, just scale coordinates.
-        :param points: np.ndarray
-        :return: np.ndarray
+        :param points: np.array
+        :return: np.array
         """
         points = np.array(points)
         if len(points.shape) == 1:
@@ -358,7 +363,7 @@ class DataSupporter:
         return self._tracks[index]
 
     @staticmethod
-    def dist(pointA: np.ndarray, pointB: np.ndarray) -> float:
+    def dist(pointA: np.array, pointB: np.array) -> float:
         """
         Just another Euclidean distance.
         """
@@ -367,7 +372,7 @@ class DataSupporter:
         return np.sqrt(np.sum((pointA - pointB)**2))
 
     @staticmethod
-    def get_track_angle(track_obj: np.ndarray, index=0) -> float:
+    def get_track_angle(track_obj: np.array, index=0) -> float:
         """
         Return angle between OX and track_obj['line'][index] -> track_obj['line'][index + 1] points
         """
@@ -383,7 +388,7 @@ class DataSupporter:
         return angle
 
     @staticmethod
-    def get_track_initial_position(track: Union[np.ndarray, Dict[str, Any]]) -> np.ndarray:
+    def get_track_initial_position(track: Union[np.array, Dict[str, Any]]) -> np.array:
         """
         Just return starting position for track object.
         """
@@ -393,8 +398,8 @@ class DataSupporter:
 
     @staticmethod
     def angle_by_2_points(
-            pointA: np.ndarray,
-            pointB: np.ndarray,
+            pointA: np.array,
+            pointB: np.array,
     ) -> float:
         return DataSupporter.angle_by_3_points(
             np.array(pointA) + np.array([1.0, 0.0]),
@@ -404,9 +409,9 @@ class DataSupporter:
 
     @staticmethod
     def angle_by_3_points(
-            pointA: np.ndarray,
-            pointB: np.ndarray,
-            pointC: np.ndarray) -> float:
+            pointA: np.array,
+            pointB: np.array,
+            pointC: np.array) -> float:
         """
         compute angle
         :param pointA: np.array of shape (2, )

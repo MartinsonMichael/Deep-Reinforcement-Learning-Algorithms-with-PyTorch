@@ -129,6 +129,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self._destroy()
         self.time = 0
         self.create_agent_car()
+        self.rewarder = Rewarder(self._settings)
 
         self.bot_cars = []
         for bot_index in range(self.num_bots):
@@ -257,7 +258,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
     def get_state_description(self):
         return {
             'picture':
-                tuple(self._data_loader.get_state_picture_shape)
+                self._data_loader.get_state_picture_shape
                 if self._data_loader.get_state_picture_shape is not None
                 else None
             ,

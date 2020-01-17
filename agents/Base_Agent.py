@@ -163,7 +163,7 @@ class Base_Agent(object):
             gym.spaces.prng.seed(random_seed)
 
     def reset_game(self):
-        """Resets the game information so we are ready to play a new episode"""
+        """Resets the game informatenvsion so we are ready to play a new episode"""
         self.environment.seed(int(np.random.random_integers(1, 2**31)))
         self.state = self.environment.reset()
         self.next_state = None
