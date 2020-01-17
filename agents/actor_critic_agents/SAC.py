@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch.distributions import Normal
 import numpy as np
 import tensorflow as tf
+import time
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
@@ -127,6 +128,7 @@ class SAC(Base_Agent):
 
     def reset_game(self):
         """Resets the game information so we are ready to play a new episode"""
+        np.random.seed(int(round(time.time() * 1000)) % 2**31)
         Base_Agent.reset_game(self)
         if self.add_extra_noise:
             self.noise.reset()

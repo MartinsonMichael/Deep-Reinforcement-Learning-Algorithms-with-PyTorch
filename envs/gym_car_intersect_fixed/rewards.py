@@ -34,6 +34,7 @@ class Rewarder:
         step_reward += (car_stats['speed'] if car_stats['speed'] > 0.2 else 0.0) * \
                        self._settings_reward['speed_per_point']
         step_reward += car_stats['time'] * self._settings_reward['time_per_point']
+        step_reward += self._settings_reward['time_per_tick']
 
         for is_item in ['is_collided', 'is_finish', 'is_out_of_track', 'is_out_of_map', 'is_out_of_road']:
             if car_stats[is_item]:
