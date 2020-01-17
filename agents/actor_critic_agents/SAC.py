@@ -155,6 +155,10 @@ class SAC(Base_Agent):
             self.state = self.next_state
             self.global_step_number += 1
             print(f'global steps : {self.global_step_number}')
+
+            if self.episode_step_number_val > self.config.max_episode_steps + 10:
+                break
+
         print(self.total_episode_score_so_far)
         if eval_ep:
             self.print_summary_of_latest_evaluation_episode()
