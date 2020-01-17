@@ -17,7 +17,7 @@
   },
   "state_config": {
     "return_pure_vector": false,
-    "picture": [3, 84, 84],
+    "picture": null,
     "vector_car_features": [
       "hull_position",
       "hull_angle",
@@ -38,7 +38,7 @@
     "new_tiles_count": 0.005,
     "speed_per_point": 0.0,
     "if_speed_more_then_threshold": 0.00001,
-    "speed_threshold": 0.2,
+    "speed_threshold": 0.05,
     "time_per_point": 0.0,
     "time_per_tick": 0.0
   },

@@ -146,7 +146,8 @@ class SAC(Base_Agent):
             if self.time_for_critic_and_actor_to_learn():
                 for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
                     self.learn()
-            mask = False if self.episode_step_number_val >= self.config.max_episode_steps else self.done
+            # mask = False if self.episode_step_number_val >= self.config.max_episode_steps else self.done
+            mask = self.done
             if not eval_ep:
                 # self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
                 self.memory.add_experience(
@@ -183,7 +184,11 @@ class SAC(Base_Agent):
         if 'time' in info.keys():
             self._game_stats['env steps taken'] = info['time']
 
+        self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()
+
     def create_tf_charts(self, tf_writer):
+        if self.global_step_number < self.hyperparameters['min_steps_before_learning']:
+            return
         with tf_writer.as_default():
             tf.summary.scalar(
                 name='rolling score',
@@ -231,7 +236,7 @@ class SAC(Base_Agent):
             if len(state.shape) == 1:
                 state = state.unsqueeze(0)
 
-        if eval == False:
+        if not eval:
             action, _, _ = self.produce_action_and_action_info(state)
         else:
             with torch.no_grad():
