@@ -44,7 +44,7 @@ def create_config(args):
     config.hyperparameters = {
         "Actor_Critic_Agents": {
             "Actor": {
-                "learning_rate": 0.003,
+                "learning_rate": 3e-4,
                 "linear_hidden_units": [20, 20],
                 "final_layer_activation": None,
                 "batch_norm": False,
@@ -53,7 +53,7 @@ def create_config(args):
                 "initialiser": "Xavier"
             },
             "Critic": {
-                "learning_rate": 0.02,
+                "learning_rate": 3e-4,
                 "linear_hidden_units": [20, 20],
                 "final_layer_activation": None,
                 "batch_norm": False,
