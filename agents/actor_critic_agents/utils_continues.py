@@ -61,7 +61,7 @@ class StateLayer(nn.Module):
         self._state_layer_out_size = 0
         if 'picture' in state_description.keys() and state_description['picture'] is not None:
             self._picture_layer = PictureProcessor()
-            self._state_layer_out_size += self._dense_s.get_out_shape_for_in(
+            self._state_layer_out_size += self._picture_layer.get_out_shape_for_in(
                 state_description['picture']
             )
 
