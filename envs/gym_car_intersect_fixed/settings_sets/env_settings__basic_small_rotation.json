@@ -18,7 +18,15 @@
   "state_config": {
     "return_pure_vector": false,
     "picture": null,
-    "vector_car_features": ["hull_position", "hull_angle"]
+    "vector_car_features": [
+      "hull_position",
+      "hull_angle",
+      "car_speed",
+      "wheels_positions",
+      "track_sensor",
+      "road_sensor",
+      "finish_sensor"
+    ]
   },
   "reward": {
     "is_collided": 0.0,

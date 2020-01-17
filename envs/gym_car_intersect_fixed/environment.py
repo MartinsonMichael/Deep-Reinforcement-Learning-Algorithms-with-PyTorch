@@ -216,11 +216,9 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
 
         self.world.Step(delta_time, 6 * 30, 2 * 30)
         self.time += delta_time
-        self.car.flush_stats()
         self.car.update_stats()
 
         for index, bot_car in enumerate(self.bot_cars):
-            bot_car.flush_stats()
             bot_car.update_stats()
             if bot_car.stats['is_finish'] or bot_car.stats['is_out_of_road'] or bot_car.stats['is_out_of_map']:
                 bot_car.destroy()
