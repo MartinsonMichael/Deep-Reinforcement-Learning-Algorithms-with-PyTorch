@@ -32,7 +32,7 @@
     "if_speed_more_then_threshold": 0.00001,
     "speed_threshold": 0.2,
     "time_per_point": 0.0,
-    "time_per_tick": -0.00001,
+    "time_per_tick": -0.00001
   },
   "done": {
     "true_flags_to_done": ["is_out_of_road", "is_out_of_map", "is_out_of_track"],
