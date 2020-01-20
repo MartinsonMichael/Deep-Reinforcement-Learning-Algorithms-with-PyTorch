@@ -17,13 +17,16 @@ from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
 
 def create_env_both(settings_path=None):
     env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
+    # -> dict[(.., .., 3), (16)]
     env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
     env = ExtendedMaxAndSkipEnv(env, skip=4)
     env = FrameCompressor(env)
+    # -> dict[(84, 84, 3), (16)]
     # env = OriginalStateKeeper(env, 'uncombined_state')
-    env = ChannelSwapper(env)
     env = ImageWithVectorCombiner(env)
+    # -> Box(84, 84, 19)
     env = ChannelSwapper(env)
+    # -> Box(19, 84, 84)
     env = TorchTensorCaster(env)
     env._max_episode_steps = 250
     return env
@@ -73,7 +76,7 @@ def create_config(args):
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
-            "min_steps_before_learning": 5000,
+            "min_steps_before_learning": 500,
             "batch_size": 256,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise

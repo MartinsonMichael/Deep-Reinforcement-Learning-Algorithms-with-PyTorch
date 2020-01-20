@@ -166,15 +166,45 @@ class NewStateLayer(nn.Module):
     def forward_vector(self, state: torch.FloatTensor):
         return self._vector_layer(state)
 
+    def _make_it_torch_tensor(self, x):
+        if isinstance(x, (torch.FloatTensor, torch.Tensor, torch.DoubleTensor)):
+            if len(x.shape) == 2 or len(x.shape) == 4:
+                return x
+            else:
+                return x.unsqueeze_(0)
+        if isinstance(x, np.ndarray):
+            if len(x.shape) == 2 or len(x.shape) == 4:
+                return torch.from_numpy(x.astype(np.float32))
+            else:
+                return torch.from_numpy(np.array([x]).astype(np.float32))
+
+        print('state trouble')
+        print(f'state type: {type(x)}')
+        print(x)
+
+        raise ValueError('add dict!')
+        # if isinstance(x, dict):
+        #     return {
+        #         key: torch.from_numpy(value) if isinstance(value, np.ndarray) else value
+        #         for key, value in x.items()
+        #     }
+
     def forward(self, state: Union[Dict[str, torch.FloatTensor], torch.FloatTensor]):
+        state = self._make_it_torch_tensor(state)
+
         if isinstance(state, dict):
             return self.forward_dict(state)
 
-        if isinstance(state, torch.FloatTensor):
+        if isinstance(state, (torch.FloatTensor, torch.Tensor)):
             if len(state.shape) == 4:
                 return self.forward_picture(state)
             if len(state.shape) == 2:
                 return self.forward_vector(state)
+
+        print('state')
+        print(f'state type : {type(state)}')
+        print(f'state shape : {state.shape}')
+        print(state)
 
         raise ValueError()
 
@@ -197,7 +227,7 @@ class QNet(nn.Module):
         torch.nn.init.xavier_uniform_(self._dense2.weight)
         torch.nn.init.constant_(self._dense2.bias, 0)
 
-        self._head1 = nn.Linear(in_features=hidden_size, out_features=action_size)
+        self._head1 = nn.Linear(in_features=hidden_size, out_features=1)
         torch.nn.init.xavier_uniform_(self._head1.weight)
         torch.nn.init.constant_(self._head1.bias, 0)
 

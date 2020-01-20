@@ -218,16 +218,6 @@ class SAC(Base_Agent):
         from the network and so did not involve any random sampling"""
         if state is None:
             state = self.state
-        if type(state) == dict:
-            for name in state.keys():
-                if state[name] is not None:
-                    if len(state[name].shape) == 1 or len(state[name].shape) == 3:
-                        state[name] = torch.FloatTensor([state[name]]).to(self.device)
-                    else:
-                        state[name] = torch.FloatTensor(state[name]).to(self.device)
-        else:
-            if len(state.shape) == 1:
-                state = state.unsqueeze(0)
 
         if not eval:
             action, _, _ = self.produce_action_and_action_info(state)
@@ -279,13 +269,29 @@ class SAC(Base_Agent):
          term is taken into account"""
         with torch.no_grad():
             next_state_action, next_state_log_pi, _ = self.produce_action_and_action_info(next_state_batch)
+
+            # print(f'next_state_batch : {next_state_batch.shape}')
+            # print(f'next_state_action : {next_state_action.shape}')
+
             qf1_next_target = self.critic_target(next_state_batch, next_state_action)
             qf2_next_target = self.critic_target_2(next_state_batch, next_state_action)
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
+
+            # print(f'reward : {reward_batch.shape}')
+            # print(f'mask : {mask_batch.shape}')
+            # print(f'min_qf_next_target : {min_qf_next_target.shape}')
+
             next_q_value = reward_batch + (1.0 - mask_batch) * self.hyperparameters["discount_rate"] * (
                 min_qf_next_target)
+
+            # print(f'next_q_value : {next_q_value.shape}')
+
         qf1 = self.critic_local(state_batch, action_batch)
         qf2 = self.critic_local_2(state_batch, action_batch)
+
+        # print(f'state batch : {state_batch.shape}')
+        # print(f'qf1 : {qf1.shape}')
+
         qf1_loss = F.mse_loss(qf1, next_q_value)
         qf2_loss = F.mse_loss(qf2, next_q_value)
         return qf1_loss, qf2_loss

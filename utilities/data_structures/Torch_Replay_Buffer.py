@@ -32,9 +32,9 @@ class Torch_Replay_Buffer(object):
         return (
             torch.from_numpy(np.array([e.state for e in experiences], dtype=np.float32)).to(self.device),
             torch.from_numpy(np.array([e.action for e in experiences], dtype=np.float32)).to(self.device),
-            torch.from_numpy(np.array([e.reward for e in experiences], dtype=np.float32)).to(self.device),
+            torch.from_numpy(np.array([[e.reward] for e in experiences], dtype=np.float32)).to(self.device),
             torch.from_numpy(np.array([e.next_state for e in experiences], dtype=np.float32)).to(self.device),
-            torch.from_numpy(np.array([e.done for e in experiences], dtype=np.float32)).to(self.device),
+            torch.from_numpy(np.array([[e.done] for e in experiences], dtype=np.float32)).to(self.device),
         )
 
     def pick_experiences(self, num_experiences=None):

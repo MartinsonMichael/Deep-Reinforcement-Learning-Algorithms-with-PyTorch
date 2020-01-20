@@ -51,10 +51,17 @@ class ImageWithVectorCombiner(gym.ObservationWrapper):
         self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
 
     def observation(self, observation):
+
+        # print(f"combiner input image shape : {observation['picture'].shape}")
+
         image = observation[self._image_name]
         vector = observation[self._vector_name] * self._vector_pre_scale
         vector_channel = np.ones(shape=list(image.shape[:-1]) + [len(vector)], dtype=np.float32) * vector
-        return np.concatenate([image.astype(np.float32), vector_channel], axis=-1)
+        res = np.concatenate([image.astype(np.float32), vector_channel], axis=-1)
+
+        # print(f"combiner output image shape : {res.shape}")
+
+        return res
 
 
 class ChannelSwapper(gym.ObservationWrapper):
@@ -90,11 +97,13 @@ class ChannelSwapper(gym.ObservationWrapper):
 
     def observation(self, observation):
         if isinstance(observation, dict):
+            # print(f"swapper input image shape : {observation['picture'].shape}")
             observation.update({
                 self._image_dict_name:
                     ChannelSwapper._image_channel_transpose(observation[self._image_dict_name])
             })
             return observation
+        # print(f"swapper input image shape : {observation.shape}")
         return ChannelSwapper._image_channel_transpose(observation)
 
 
@@ -132,24 +141,18 @@ class ExtendedMaxAndSkipEnv(gym.Wrapper):
 
 
 class FrameCompressor(gym.ObservationWrapper):
-    def __init__(self, env, channel_order='chw', image_dict_name='picture'):
+    def __init__(self, env, image_dict_name='picture'):
         """Warp frames to 84x84 as done in the Nature paper and later work.
 
         To use this wrapper, OpenCV-Python is required.
         """
         gym.ObservationWrapper.__init__(self, env)
         self._image_dict_name = image_dict_name
-        self.width = 84
-        self.height = 84
-        shape = {
-            'hwc': (self.height, self.width, 3),
-            'chw': (3, self.height, self.width),
-        }
         if isinstance(self.observation_space, gym.spaces.Dict):
             self.observation_space.spaces[image_dict_name] = gym.spaces.Box(
                 low=0,
                 high=255,
-                shape=shape[channel_order],
+                shape=(84, 84, 3),
                 dtype=np.uint8,
             )
         else:
@@ -158,8 +161,10 @@ class FrameCompressor(gym.ObservationWrapper):
     def observation(self, obs: dict):
         frame = obs[self._image_dict_name]
 
-        frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
+        frame = cv2.resize(frame, (84, 84), interpolation=cv2.INTER_AREA)
         frame = frame.astype(np.uint8)
         obs.update({self._image_dict_name: frame})
+
+        # print(f"compressor, output image shape : {obs['picture'].shape}")
 
         return obs
