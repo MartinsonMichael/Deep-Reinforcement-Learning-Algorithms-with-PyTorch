@@ -20,11 +20,7 @@
     "vector_car_features": [
       "hull_position",
       "hull_angle",
-      "car_speed",
-      "wheels_positions",
-      "track_sensor",
-      "road_sensor",
-      "finish_sensor"
+      "car_speed"
     ]
   },
   "reward": {
