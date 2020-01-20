@@ -4,6 +4,43 @@ import numpy as np
 import collections
 
 
+class OriginalStateKeeper(gym.ObservationWrapper):
+    """save state"""
+    def __init__(self, env, state_save_name='original_state'):
+        super().__init__(env)
+        self._state_save_name = state_save_name
+        self.__setattr__(state_save_name, None)
+
+    def observation(self, observation):
+        self.__setattr__(self._state_save_name, observation)
+        return observation
+
+
+class ImageWithVectorCombiner(gym.ObservationWrapper):
+    """Take 'pov' value (current game display) and concatenate compass angle information with it, as a new channel of image;
+    resulting image has RGB+compass (or K+compass for gray-scaled image) channels.
+    """
+    def __init__(self, env, image_dict_name='picture', vector_dict_name='vector', vector_pre_scale=255.0):
+        super().__init__(env)
+        self._image_name = image_dict_name
+        self._vector_name = vector_dict_name
+        self._vector_pre_scale = vector_pre_scale
+
+        image_space = self.env.observation_space.spaces[self._image_name]
+        vector_space = self.env.observation_space.spaces[self._vector_name]
+
+        low = self.observation({self._image_name: image_space.low, self._vector_name: vector_space.low})
+        high = self.observation({self._image_name: image_space.high, self._vector_name: vector_space.high})
+
+        self.observation_space = gym.spaces.Box(low=low, high=high)
+
+    def observation(self, observation):
+        image = observation[self._image_name]
+        vector = observation[self._vector_name] * self._vector_pre_scale
+        vector_channel = np.ones(shape=list(image.shape[:-1]) + [len(vector)], dtype=image.dtype) * vector
+        return np.concatenate([image, vector_channel], axis=-1)
+
+
 class ExtendedMaxAndSkipEnv(gym.Wrapper):
     def __init__(self, env=None, skip=4):
         """Return only every `skip`-th frame"""

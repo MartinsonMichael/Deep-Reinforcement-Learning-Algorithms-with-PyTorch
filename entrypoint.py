@@ -10,15 +10,18 @@ from utilities.data_structures.Config import Config
 
 import chainerrl
 import tensorflow as tf
-from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, ExtendedWarpFrame
+from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, ExtendedWarpFrame, OriginalStateKeeper, \
+    ImageWithVectorCombiner
 from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
 
 
-def create_env(settings_path=None):
+def create_env_both(settings_path=None):
     env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
     env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
     env = ExtendedMaxAndSkipEnv(env, skip=4)
     env = ExtendedWarpFrame(env, channel_order='chw')
+    env = OriginalStateKeeper(env, 'uncombined_state')
+    env = ImageWithVectorCombiner(env)
     env._max_episode_steps = 250
     return env
 
@@ -26,7 +29,12 @@ def create_env(settings_path=None):
 def create_config(args):
     config = Config()
     config.seed = 1
-    config.environment = create_env(args.env_settings)
+    config.environment = None
+    if args.mode == 'both':
+        config.environment = create_env_both(args.env_settings)
+    else:
+        raise NotImplemented
+
     config.num_episodes_to_run = 1500
     config.file_to_save_data_results = 'result_cars'
     config.file_to_save_results_graph = 'graph_cars'
@@ -109,5 +117,10 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='test', help='name for experiment')
+    parser.add_argument('--mode', type=str, default='both', help='image only, vector only, or their combination')
     parser.add_argument('--env-settings', type=str, default='test', help='path to CarRacing env settings')
-    main(parser.parse_args())
+    args = parser.parse_args()
+
+    if args.mode not in ['image', 'vector', 'both']:
+        raise ValueError("mode should be one of 'image', 'vector', 'both'")
+    main(args)

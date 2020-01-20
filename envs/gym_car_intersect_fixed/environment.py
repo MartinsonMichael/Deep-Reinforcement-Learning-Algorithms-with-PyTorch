@@ -55,11 +55,29 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
             high=np.array([+1.0, +1.0, +1.0]),
             dtype=np.float32
         )  # steer, gas, brake
-        self.observation_space = spaces.Box(
-            low=0,
-            high=255,
-            shape=self._data_loader.get_background().shape,
-            dtype=np.uint8
+        test_car = DummyCar(
+            world=self.world,
+            car_image=self._data_loader.peek_car_image(is_for_agent=True),
+            track=DataSupporter.do_with_points(
+                self._data_loader.peek_track(is_for_agent=True, expand_points=200, index=self._preseted_agent_track),
+                self._data_loader.convertIMG2PLAY,
+            ),
+            data_loader=self._data_loader,
+            bot=False,
+        )
+        self.observation_space = spaces.Dict(
+            picture=spaces.Box(
+                low=0,
+                high=255,
+                shape=self._data_loader.get_background().shape,
+                dtype=np.uint8,
+            ),
+            vector=spaces.Box(
+                low=-5,
+                high=+5,
+                shape=(len(test_car.get_vector_state()),),
+                dtype=np.float32,
+            ),
         )
         self._preseted_agent_track = None
         self._preseted_render_mode = 'human'
@@ -238,34 +256,21 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         return self._create_state(), step_reward, done, info
 
     def _create_state(self) -> Union[np.ndarray, Dict[str, Union[None, np.ndarray]]]:
-        if 'return_pure_vector' in self._settings['state_config'].keys() and \
-                self._settings['state_config']['return_pure_vector']:
-            if self.get_state_description()['picture'] is not None:
-                return self.picture_state
-            else:
-                return self.car.get_vector_state()
-
         return {
-            'picture': self.picture_state if self.get_state_description()['picture'] is not None else None,
-            'vector': self.car.get_vector_state() if len(self._data_loader.car_features_list) != 0 else None,
+            'picture':
+                self.picture_state
+                if self._settings['state_config']['picture'] is not None
+                else None
+            ,
+            'vector':
+                self.car.get_vector_state()
+                if len(self._settings['state_config']['vector_car_features']) != 0
+                else None
+            ,
         }
 
     def get_true_picture(self):
         return self.picture_state
-
-    def get_state_description(self):
-        return {
-            'picture':
-                tuple(self._data_loader.get_state_picture_shape)
-                if self._data_loader.get_state_picture_shape is not None
-                else None
-            ,
-            'vector':
-                len(self.car.get_vector_state())
-                if len(self._data_loader.car_features_list) != 0
-                else None
-            ,
-        }
 
     def render(self, mode='human') -> np.array:
         background_image = self._data_loader.get_background()

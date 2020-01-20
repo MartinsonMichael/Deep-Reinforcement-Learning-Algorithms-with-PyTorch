@@ -31,13 +31,13 @@ class SAC(Base_Agent):
         self.hyperparameters = config.hyperparameters
 
         self.critic_local = QNet(
-            state_description=self.config.environment.get_state_description(),
+            state_description=self.config.environment.observation_space,
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
         )
         self.critic_local_2 = QNet(
-            state_description=self.config.environment.get_state_description(),
+            state_description=self.config.environment.observation_space,
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
@@ -55,13 +55,13 @@ class SAC(Base_Agent):
         )
 
         self.critic_target = QNet(
-            state_description=self.config.environment.get_state_description(),
+            state_description=self.config.environment.observation_space,
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
         )
         self.critic_target_2 = QNet(
-            state_description=self.config.environment.get_state_description(),
+            state_description=self.config.environment.observation_space,
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
@@ -83,7 +83,7 @@ class SAC(Base_Agent):
         )
 
         self.actor_local = Policy(
-            state_description=self.config.environment.get_state_description(),
+            state_description=self.config.environment.observation_space,
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
@@ -139,9 +139,11 @@ class SAC(Base_Agent):
         eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
         self.episode_step_number_val = 0
         while not self.done:
+            self._state_to_buffer = self.environment.uncombined_state
             self.episode_step_number_val += 1
             self.action = self.pick_action(eval_ep)
             self.conduct_action(self.action)
+            self._next_state_to_buffer = self.environment.uncombined_state
 
             if self.time_for_critic_and_actor_to_learn():
                 for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
@@ -151,7 +153,7 @@ class SAC(Base_Agent):
             if not eval_ep:
                 # self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
                 self.memory.add_experience(
-                    self.state, self.action, self.reward, self.next_state, mask
+                    self._state_to_buffer, self.action, self.reward, self._next_state_to_buffer, mask
                 )
             self.state = self.next_state
             self.global_step_number += 1
