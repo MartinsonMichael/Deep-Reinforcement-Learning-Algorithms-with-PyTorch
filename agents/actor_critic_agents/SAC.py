@@ -1,14 +1,14 @@
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.utils_continues import QNet, Policy
 from utilities.OU_Noise import OU_Noise
-from utilities.data_structures.Extended_Replay_Buffer import Extended_Replay_Buffer, ReplayBufferMode
 from torch.optim import Adam
 import torch
 import torch.nn.functional as F
 from torch.distributions import Normal
 import numpy as np
 import tensorflow as tf
-import time
+
+from utilities.data_structures.Torch_Replay_Buffer import Torch_Replay_Buffer
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
@@ -69,17 +69,10 @@ class SAC(Base_Agent):
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
         Base_Agent.copy_model_over(self.critic_local_2, self.critic_target_2)
 
-        replay_buffer_mode = ReplayBufferMode.both
-        if self.config.environment.get_state_description()['picture'] is None:
-            replay_buffer_mode = ReplayBufferMode.only_vectors
-        elif self.config.environment.get_state_description()['vector'] is None:
-            replay_buffer_mode = ReplayBufferMode.only_pictures
-
-        self.memory = Extended_Replay_Buffer(
+        self.memory = Torch_Replay_Buffer(
             self.hyperparameters["Critic"]["buffer_size"],
             self.hyperparameters["batch_size"],
             self.config.seed,
-            mode=replay_buffer_mode,
         )
 
         self.actor_local = Policy(
@@ -139,11 +132,9 @@ class SAC(Base_Agent):
         eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
         self.episode_step_number_val = 0
         while not self.done:
-            self._state_to_buffer = self.environment.uncombined_state
             self.episode_step_number_val += 1
             self.action = self.pick_action(eval_ep)
             self.conduct_action(self.action)
-            self._next_state_to_buffer = self.environment.uncombined_state
 
             if self.time_for_critic_and_actor_to_learn():
                 for _ in range(self.hyperparameters["learning_updates_per_learning_session"]):
@@ -153,7 +144,7 @@ class SAC(Base_Agent):
             if not eval_ep:
                 # self.save_experience(experience=(self.state, self.action, self.reward, self.next_state, mask))
                 self.memory.add_experience(
-                    self._state_to_buffer, self.action, self.reward, self._next_state_to_buffer, mask
+                    self.state, self.action, self.reward, self.next_state, mask
                 )
             self.state = self.next_state
             self.global_step_number += 1

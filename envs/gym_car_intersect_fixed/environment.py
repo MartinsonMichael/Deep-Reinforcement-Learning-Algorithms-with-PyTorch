@@ -48,6 +48,9 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self.num_bots = self._settings['bot_number']
         self.bot_cars = []
 
+        self._preseted_agent_track = None
+        self._preseted_render_mode = 'human'
+
         # init gym properties
         self.picture_state = np.zeros_like(self._data_loader.get_background(), dtype=np.uint8)
         self.action_space = spaces.Box(
@@ -75,13 +78,10 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
             vector=spaces.Box(
                 low=-5,
                 high=+5,
-                shape=(len(test_car.get_vector_state()),),
+                shape=(len(test_car.get_vector_state()), ),
                 dtype=np.float32,
             ),
         )
-        self._preseted_agent_track = None
-        self._preseted_render_mode = 'human'
-
         self.reset()
 
     def set_render_mode(self, mode):
@@ -258,12 +258,12 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
     def _create_state(self) -> Union[np.ndarray, Dict[str, Union[None, np.ndarray]]]:
         return {
             'picture':
-                self.picture_state
+                self.picture_state.astype(np.uint8)
                 if self._settings['state_config']['picture'] is not None
                 else None
             ,
             'vector':
-                self.car.get_vector_state()
+                self.car.get_vector_state().astype(np.float32)
                 if len(self._settings['state_config']['vector_car_features']) != 0
                 else None
             ,

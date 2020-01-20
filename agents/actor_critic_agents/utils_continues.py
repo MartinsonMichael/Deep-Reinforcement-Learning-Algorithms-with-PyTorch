@@ -46,56 +46,59 @@ class PictureProcessor(nn.Module):
         return x.view(x.size(0), -1)
 
     def get_out_shape_for_in(self, input_shape):
-        return self.forward(torch.Tensor(np.zeros((1, *input_shape)))).shape[1]
+        return self.forward(torch.from_numpy(np.zeros(
+            shape=(1, *tuple(input_shape)),
+            dtype=np.float32))
+        ).shape[1]
 
 
-class StateLayer(nn.Module):
-    def __init__(self, state_description: Dict[str, Any], hidden_size, device):
-        super(StateLayer, self).__init__()
-        self._device = device
-
-        self._picture_layer = None
-        self._vector_layer = None
-
-        print(f'state layer : {state_description}')
-
-        self._state_layer_out_size = 0
-        if 'picture' in state_description.keys() and state_description['picture'] is not None:
-            self._picture_layer = PictureProcessor()
-            self._state_layer_out_size += self._picture_layer.get_out_shape_for_in(
-                state_description['picture']
-            )
-
-        if 'vector' in state_description.keys() and state_description['vector'] is not None:
-            self._vector_layer = nn.Linear(in_features=state_description['vector'], out_features=hidden_size)
-            torch.nn.init.xavier_uniform_(self._vector_layer.weight)
-            torch.nn.init.constant_(self._vector_layer.bias, 0)
-            self._state_layer_out_size += hidden_size
-
-    def get_out_shape_for_in(self):
-        return self._state_layer_out_size
-
-    def forward(self, state: Dict[str, Union[np.array, torch.FloatTensor]]):
-
-        state_pic = None
-        if self._picture_layer is not None:
-            state_pic = self._picture_layer(state['picture'] / 256)
-
-        state_vec = None
-        if self._vector_layer is not None:
-            state_vec = self._vector_layer(state['vector'])
-
-        if state_vec is not None and state_pic is not None:
-            return torch.cat((state_pic, state_vec), dim=1)
-
-        if state_pic is not None:
-            return state_pic
-
-        if state_vec is not None:
-            return state_vec
-
-        raise ValueError("state should be Dict['picture' : tensor or None, 'vector' : tensor or None]")
-
+# class StateLayer(nn.Module):
+#     def __init__(self, state_description: Dict[str, Any], hidden_size, device):
+#         super(StateLayer, self).__init__()
+#         self._device = device
+#
+#         self._picture_layer = None
+#         self._vector_layer = None
+#
+#         print(f'state layer : {state_description}')
+#
+#         self._state_layer_out_size = 0
+#         if 'picture' in state_description.keys() and state_description['picture'] is not None:
+#             self._picture_layer = PictureProcessor()
+#             self._state_layer_out_size += self._picture_layer.get_out_shape_for_in(
+#                 state_description['picture']
+#             )
+#
+#         if 'vector' in state_description.keys() and state_description['vector'] is not None:
+#             self._vector_layer = nn.Linear(in_features=state_description['vector'], out_features=hidden_size)
+#             torch.nn.init.xavier_uniform_(self._vector_layer.weight)
+#             torch.nn.init.constant_(self._vector_layer.bias, 0)
+#             self._state_layer_out_size += hidden_size
+#
+#     def get_out_shape_for_in(self):
+#         return self._state_layer_out_size
+#
+#     def forward(self, state: Dict[str, Union[np.array, torch.FloatTensor]]):
+#
+#         state_pic = None
+#         if self._picture_layer is not None:
+#             state_pic = self._picture_layer(state['picture'] / 256)
+#
+#         state_vec = None
+#         if self._vector_layer is not None:
+#             state_vec = self._vector_layer(state['vector'])
+#
+#         if state_vec is not None and state_pic is not None:
+#             return torch.cat((state_pic, state_vec), dim=1)
+#
+#         if state_pic is not None:
+#             return state_pic
+#
+#         if state_vec is not None:
+#             return state_vec
+#
+#         raise ValueError("state should be Dict['picture' : tensor or None, 'vector' : tensor or None]")
+#
 
 class NewStateLayer(nn.Module):
     def __init__(self, state_description: Union[dict, spaces.Box], hidden_size, device):
@@ -124,9 +127,9 @@ class NewStateLayer(nn.Module):
 
         if isinstance(state_description, spaces.Box):
             if len(state_description.shape) == 3:
-                self._picture_layer = PictureProcessor(state_description.shape[2])
+                self._picture_layer = PictureProcessor(state_description.shape[0])
                 self._state_layer_out_size = self._picture_layer.get_out_shape_for_in(
-                    state_description.low
+                    state_description.shape
                 )
             if len(state_description.shape) == 1:
                 self._vector_layer = nn.Linear(in_features=state_description.shape[0], out_features=hidden_size)
@@ -158,7 +161,7 @@ class NewStateLayer(nn.Module):
         raise ValueError("state should be Dict['picture' : tensor or None, 'vector' : tensor or None]")
 
     def forward_picture(self, state: torch.FloatTensor):
-        return self._picture_layer(state)
+        return self._picture_layer(state / 256)
 
     def forward_vector(self, state: torch.FloatTensor):
         return self._vector_layer(state)

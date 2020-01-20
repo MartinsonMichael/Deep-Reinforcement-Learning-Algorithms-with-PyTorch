@@ -3,6 +3,8 @@ import gym
 import numpy as np
 import collections
 
+import torch
+
 
 class OriginalStateKeeper(gym.ObservationWrapper):
     """save state"""
@@ -14,6 +16,20 @@ class OriginalStateKeeper(gym.ObservationWrapper):
     def observation(self, observation):
         self.__setattr__(self._state_save_name, observation)
         return observation
+
+
+class TorchTensorCaster(gym.ObservationWrapper):
+    def observation(self, obs):
+        if isinstance(obs, dict):
+            return {
+                name: torch.from_numpy(value)
+                if value is not None
+                else None
+                for name, value in obs.items()
+            }
+        if isinstance(obs, np.ndarray):
+            torch.from_numpy(obs)
+        return obs
 
 
 class ImageWithVectorCombiner(gym.ObservationWrapper):
@@ -32,22 +48,64 @@ class ImageWithVectorCombiner(gym.ObservationWrapper):
         low = self.observation({self._image_name: image_space.low, self._vector_name: vector_space.low})
         high = self.observation({self._image_name: image_space.high, self._vector_name: vector_space.high})
 
-        self.observation_space = gym.spaces.Box(low=low, high=high)
+        self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
 
     def observation(self, observation):
         image = observation[self._image_name]
         vector = observation[self._vector_name] * self._vector_pre_scale
-        vector_channel = np.ones(shape=list(image.shape[:-1]) + [len(vector)], dtype=image.dtype) * vector
-        return np.concatenate([image, vector_channel], axis=-1)
+        vector_channel = np.ones(shape=list(image.shape[:-1]) + [len(vector)], dtype=np.float32) * vector
+        return np.concatenate([image.astype(np.float32), vector_channel], axis=-1)
+
+
+class ChannelSwapper(gym.ObservationWrapper):
+
+    def __init__(self, env, image_dict_name='picture'):
+        gym.ObservationWrapper.__init__(self, env)
+        self._image_dict_name = image_dict_name
+
+        if isinstance(self.observation_space, gym.spaces.Dict):
+            # print(f"swap dict axis from : {self.observation_space.spaces['picture'].shape}", end=' ')
+            self.observation_space.spaces[self._image_dict_name] = gym.spaces.Box(
+                low=ChannelSwapper._image_channel_transpose(
+                    self.observation_space.spaces[self._image_dict_name].low,
+                ),
+                high=ChannelSwapper._image_channel_transpose(
+                    self.observation_space.spaces[self._image_dict_name].high,
+                ),
+                dtype=self.observation_space.spaces[self._image_dict_name].dtype,
+            )
+            # print(f"to : {self.observation_space.spaces['picture'].shape}")
+        elif isinstance(self.observation_space, gym.spaces.Box):
+            # print(f"swap box axis from {self.observation_space.shape}", end=' ')
+            self.observation_space = gym.spaces.Box(
+                low=ChannelSwapper._image_channel_transpose(self.observation_space.low),
+                high=ChannelSwapper._image_channel_transpose(self.observation_space.high),
+                dtype=self.observation_space.dtype,
+            )
+            # print(f"to : {self.observation_space.shape}")
+
+    @staticmethod
+    def _image_channel_transpose(image):
+        return np.transpose(image, (2, 1, 0))
+
+    def observation(self, observation):
+        if isinstance(observation, dict):
+            observation.update({
+                self._image_dict_name:
+                    ChannelSwapper._image_channel_transpose(observation[self._image_dict_name])
+            })
+            return observation
+        return ChannelSwapper._image_channel_transpose(observation)
 
 
 class ExtendedMaxAndSkipEnv(gym.Wrapper):
-    def __init__(self, env=None, skip=4):
+    def __init__(self, env=None, skip=4, image_dict_name='picture'):
         """Return only every `skip`-th frame"""
         super(ExtendedMaxAndSkipEnv, self).__init__(env)
         # most recent raw observations (for max pooling across time steps)
         self._obs_buffer = collections.deque(maxlen=2)
         self._skip = skip
+        self._image_dict_name = image_dict_name
 
     def step(self, action):
         total_reward = 0.0
@@ -57,16 +115,13 @@ class ExtendedMaxAndSkipEnv(gym.Wrapper):
         self._obs_buffer = []
         for _ in range(self._skip):
             obs, reward, done, info = self.env.step(action)
-            if obs['picture'] is not None:
-                self._obs_buffer.append(obs['picture'])
+            self._obs_buffer.append(obs[self._image_dict_name])
             total_reward += reward
             if done:
                 break
-        if len(self._obs_buffer) != 0:
-            max_frame = np.max(np.stack(self._obs_buffer), axis=0)
-        else:
-            max_frame = None
-        return {'picture': max_frame, 'vector': obs['vector']}, total_reward, done, info
+        max_frame = np.max(np.stack(self._obs_buffer), axis=0)
+        obs.update({self._image_dict_name: max_frame})
+        return obs, total_reward, done, info
 
     def reset(self):
         """Clear past frame buffer and init. to first obs. from inner env."""
@@ -76,27 +131,35 @@ class ExtendedMaxAndSkipEnv(gym.Wrapper):
         return obs
 
 
-class ExtendedWarpFrame(gym.ObservationWrapper):
-    def __init__(self, env, channel_order='chw'):
+class FrameCompressor(gym.ObservationWrapper):
+    def __init__(self, env, channel_order='chw', image_dict_name='picture'):
         """Warp frames to 84x84 as done in the Nature paper and later work.
 
         To use this wrapper, OpenCV-Python is required.
         """
         gym.ObservationWrapper.__init__(self, env)
+        self._image_dict_name = image_dict_name
         self.width = 84
         self.height = 84
         shape = {
             'hwc': (self.height, self.width, 3),
             'chw': (3, self.height, self.width),
         }
-        self.shape = shape[channel_order]
+        if isinstance(self.observation_space, gym.spaces.Dict):
+            self.observation_space.spaces[image_dict_name] = gym.spaces.Box(
+                low=0,
+                high=255,
+                shape=shape[channel_order],
+                dtype=np.uint8,
+            )
+        else:
+            raise ValueError('ExtendedWarpFrame should wrap dict observations')
 
-    def observation(self, obs):
-        frame = obs['picture']
-        if frame is not None:
-            frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
-            if frame.shape != self.shape:
-                frame = np.transpose(frame, (2, 1, 0))
-            frame.astype(np.uint8)
+    def observation(self, obs: dict):
+        frame = obs[self._image_dict_name]
 
-        return {'picture': frame, 'vector': obs['vector']}
+        frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
+        frame = frame.astype(np.uint8)
+        obs.update({self._image_dict_name: frame})
+
+        return obs

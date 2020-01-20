@@ -10,8 +10,8 @@ from utilities.data_structures.Config import Config
 
 import chainerrl
 import tensorflow as tf
-from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, ExtendedWarpFrame, OriginalStateKeeper, \
-    ImageWithVectorCombiner
+from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, FrameCompressor, OriginalStateKeeper, \
+    ImageWithVectorCombiner, ChannelSwapper, TorchTensorCaster
 from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
 
 
@@ -19,9 +19,12 @@ def create_env_both(settings_path=None):
     env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
     env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
     env = ExtendedMaxAndSkipEnv(env, skip=4)
-    env = ExtendedWarpFrame(env, channel_order='chw')
-    env = OriginalStateKeeper(env, 'uncombined_state')
+    env = FrameCompressor(env)
+    # env = OriginalStateKeeper(env, 'uncombined_state')
+    env = ChannelSwapper(env)
     env = ImageWithVectorCombiner(env)
+    env = ChannelSwapper(env)
+    env = TorchTensorCaster(env)
     env._max_episode_steps = 250
     return env
 

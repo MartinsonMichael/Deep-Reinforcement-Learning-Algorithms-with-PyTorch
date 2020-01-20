@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run -v $PWD/logs:/cars/logs -v $PWD/save_animation_folder:/cars/save_animation_folder -it $1 python entrypoint_vector.py --name $2 --env-settings envs/gym_car_intersect_fixed/settings_sets/env_settings__basic_small_rotation.json
+docker run -v $PWD/logs:/cars/logs -v $PWD/save_animation_folder:/cars/save_animation_folder -it $1 python entrypoint.py --name $2 --env-settings envs/gym_car_intersect_fixed/settings_sets/env_settings__basic_small_rotation.json
