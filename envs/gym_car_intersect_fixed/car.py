@@ -300,6 +300,7 @@ class DummyCar:
 
             'speed': 0.0,
             'time': 0,
+            'track_progress': 0.0,
         }
 
     def update_stats(self):
@@ -343,6 +344,7 @@ class DummyCar:
         # update track progress
         self._update_track_point()
         self.update_finish()
+        self._state_data['track_progress'] = (1 + self._track_point) / len(self.track['line'])
 
         # update collision from contact listener
         self._state_data['is_collided'] = self._hull.collision

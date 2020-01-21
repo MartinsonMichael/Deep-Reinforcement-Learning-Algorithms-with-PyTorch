@@ -9,15 +9,16 @@ from torch.distributions import Normal
 
 
 class PictureProcessor(nn.Module):
-    def __init__(self, in_channels=3):
+    def __init__(self, in_channels=3, device='cpu'):
         super(PictureProcessor, self).__init__()
+        self._device = device
 
         self._conv1 = nn.Conv2d(
             in_channels=in_channels,
             out_channels=32,
             kernel_size=(8, 8),
             stride=(4, 4),
-        )
+        ).to(device)
         torch.nn.init.xavier_uniform_(self._conv1.weight)
         torch.nn.init.constant_(self._conv1.bias, 0)
 
@@ -26,7 +27,7 @@ class PictureProcessor(nn.Module):
             out_channels=64,
             kernel_size=(4, 4),
             stride=(2, 2),
-        )
+        ).to(device)
         torch.nn.init.xavier_uniform_(self._conv2.weight)
         torch.nn.init.constant_(self._conv2.bias, 0)
 
@@ -35,7 +36,7 @@ class PictureProcessor(nn.Module):
             out_channels=64,
             kernel_size=(3, 3),
             stride=(1, 1),
-        )
+        ).to(device)
         torch.nn.init.xavier_uniform_(self._conv3.weight)
         torch.nn.init.constant_(self._conv3.bias, 0)
 
@@ -48,7 +49,7 @@ class PictureProcessor(nn.Module):
     def get_out_shape_for_in(self, input_shape):
         return self.forward(torch.from_numpy(np.zeros(
             shape=(1, *tuple(input_shape)),
-            dtype=np.float32))
+            dtype=np.float32)).to(self._device)
         ).shape[1]
 
 
@@ -114,25 +115,27 @@ class NewStateLayer(nn.Module):
 
         if isinstance(state_description, (spaces.Dict, dict)):
             if 'picture' in state_description.keys() and state_description['picture'] is not None:
-                self._picture_layer = PictureProcessor()
+                self._picture_layer = PictureProcessor(device=self._device)
                 self._state_layer_out_size += self._picture_layer.get_out_shape_for_in(
                     state_description['picture']
                 )
 
             if 'vector' in state_description.keys() and state_description['vector'] is not None:
                 self._vector_layer = nn.Linear(in_features=state_description['vector'], out_features=hidden_size)
+                self._vector_layer.to(self._device)
                 torch.nn.init.xavier_uniform_(self._vector_layer.weight)
                 torch.nn.init.constant_(self._vector_layer.bias, 0)
                 self._state_layer_out_size += hidden_size
 
         if isinstance(state_description, spaces.Box):
             if len(state_description.shape) == 3:
-                self._picture_layer = PictureProcessor(state_description.shape[0])
+                self._picture_layer = PictureProcessor(state_description.shape[0], device=self._device)
                 self._state_layer_out_size = self._picture_layer.get_out_shape_for_in(
                     state_description.shape
                 )
             if len(state_description.shape) == 1:
                 self._vector_layer = nn.Linear(in_features=state_description.shape[0], out_features=hidden_size)
+                self._vector_layer.to(self._device)
                 torch.nn.init.xavier_uniform_(self._vector_layer.weight)
                 torch.nn.init.constant_(self._vector_layer.bias, 0)
                 self._state_layer_out_size += hidden_size
@@ -167,16 +170,16 @@ class NewStateLayer(nn.Module):
         return self._vector_layer(state)
 
     def _make_it_torch_tensor(self, x):
-        if isinstance(x, (torch.FloatTensor, torch.Tensor, torch.DoubleTensor)):
+        if isinstance(x, (torch.FloatTensor, torch.Tensor, torch.cuda.FloatTensor)):
             if len(x.shape) == 2 or len(x.shape) == 4:
-                return x
+                return x.to(self._device)
             else:
-                return x.unsqueeze_(0)
+                return x.unsqueeze_(0).to(self._device)
         if isinstance(x, np.ndarray):
             if len(x.shape) == 2 or len(x.shape) == 4:
-                return torch.from_numpy(x.astype(np.float32))
+                return torch.from_numpy(x.astype(np.float32)).to(self._device)
             else:
-                return torch.from_numpy(np.array([x]).astype(np.float32))
+                return torch.from_numpy(np.array([x]).astype(np.float32)).to(self._device)
 
         print('state trouble')
         print(f'state type: {type(x)}')
@@ -216,18 +219,18 @@ class QNet(nn.Module):
 
         self._state_layer = NewStateLayer(state_description, hidden_size, device)
 
-        self._dense_a = nn.Linear(in_features=action_size, out_features=hidden_size)
+        self._dense_a = nn.Linear(in_features=action_size, out_features=hidden_size).to(self._device)
         torch.nn.init.xavier_uniform_(self._dense_a.weight)
         torch.nn.init.constant_(self._dense_a.bias, 0)
 
         self._dense2 = nn.Linear(
             in_features=hidden_size + self._state_layer.get_out_shape_for_in(),
             out_features=hidden_size,
-        )
+        ).to(self._device)
         torch.nn.init.xavier_uniform_(self._dense2.weight)
         torch.nn.init.constant_(self._dense2.bias, 0)
 
-        self._head1 = nn.Linear(in_features=hidden_size, out_features=1)
+        self._head1 = nn.Linear(in_features=hidden_size, out_features=1).to(self._device)
         torch.nn.init.xavier_uniform_(self._head1.weight)
         torch.nn.init.constant_(self._head1.bias, 0)
 
@@ -248,11 +251,11 @@ class Policy(nn.Module):
 
         self._state_layer = NewStateLayer(state_description, hidden_size, device)
 
-        self._dense2 = nn.Linear(in_features=self._state_layer.get_out_shape_for_in(), out_features=hidden_size)
+        self._dense2 = nn.Linear(in_features=self._state_layer.get_out_shape_for_in(), out_features=hidden_size).to(self._device)
         torch.nn.init.xavier_uniform_(self._dense2.weight)
         torch.nn.init.constant_(self._dense2.bias, 0)
 
-        self._head = nn.Linear(in_features=hidden_size, out_features=2 * action_size)
+        self._head = nn.Linear(in_features=hidden_size, out_features=2 * action_size).to(self._device)
         torch.nn.init.xavier_uniform_(self._head.weight)
         torch.nn.init.constant_(self._head.bias, 0)
 

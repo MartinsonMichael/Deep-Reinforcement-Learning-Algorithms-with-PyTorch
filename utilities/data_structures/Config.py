@@ -11,7 +11,7 @@ class Config(object):
         self.visualise_overall_results = None
         self.visualise_individual_results = None
         self.hyperparameters = None
-        self.use_GPU = None
+        self.device = 'cpu'
         self.overwrite_existing_results_file = None
         self.save_model = False
         self.standard_deviation_results = 1.0

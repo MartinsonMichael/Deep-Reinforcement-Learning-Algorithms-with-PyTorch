@@ -176,6 +176,8 @@ class SAC(Base_Agent):
                 self._game_stats['finished'] = 0
         if 'time' in info.keys():
             self._game_stats['env steps taken'] = info['time']
+        if 'track_progress' in info.keys():
+            self._game_stats['track_progress'] = info['track_progress']
 
         self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()[0]
 
