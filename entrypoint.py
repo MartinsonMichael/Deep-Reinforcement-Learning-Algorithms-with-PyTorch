@@ -77,7 +77,7 @@ def create_config(args):
                 "initialiser": "Xavier"
             },
             "min_steps_before_learning": 500,
-            "batch_size": 8,
+            "batch_size": 16,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
             "theta": 0.15,  # for O-H noise

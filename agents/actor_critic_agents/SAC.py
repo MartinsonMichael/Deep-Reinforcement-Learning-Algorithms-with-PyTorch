@@ -73,6 +73,7 @@ class SAC(Base_Agent):
             self.hyperparameters["Critic"]["buffer_size"],
             self.hyperparameters["batch_size"],
             self.config.seed,
+            device=self.device,
         )
 
         self.actor_local = Policy(
