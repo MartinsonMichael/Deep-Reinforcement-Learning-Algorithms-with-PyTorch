@@ -60,12 +60,8 @@ class Rewarder:
         """
         done = False
 
-        if self._finish_times >= 5:
+        if car_stats['time'] > 300:
             return True
-        if self._finish_times > 0:
-            self._finish_times += 1
-        if car_stats['is_finish']:
-            self._finish_times += 1
 
         for item in self._settings_done['true_flags_to_done']:
             if car_stats[item]:
