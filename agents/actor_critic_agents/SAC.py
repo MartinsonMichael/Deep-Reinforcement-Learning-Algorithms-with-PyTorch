@@ -1,3 +1,5 @@
+import time
+
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.utils_continues import QNet, Policy
 from utilities.OU_Noise import OU_Noise
@@ -127,6 +129,90 @@ class SAC(Base_Agent):
         if self.add_extra_noise:
             self.noise.reset()
         self._game_stats = {}
+
+    def run_n_episodes(
+            self,
+            num_episodes=None,
+            show_whether_achieved_goal=True,
+            save_and_print_results=True,
+            tf_saver=None,
+            visualize=True,
+    ):
+        """Runs game to completion n times and then summarises results and saves model (if asked to)"""
+        if num_episodes is None:
+            num_episodes = self.config.num_episodes_to_run
+        start = time.time()
+        while self.episode_number < num_episodes:
+            self.reset_game()
+
+            need_visualize = visualize if self.episode_number % 5 == 0 else False
+
+            if 'mode_to_use' not in self.hyperparameters.keys():
+                self.step(visualize=need_visualize)
+            else:
+                if self.hyperparameters['mode_to_use'] == 'rlkit':
+                    self.rlkit_step(visualize=need_visualize)
+                else:
+                    self.step(visualize=need_visualize)
+
+
+            if save_and_print_results:
+                self.save_and_print_result()
+            if tf_saver is not None:
+                self.create_tf_charts(tf_saver)
+
+        time_taken = time.time() - start
+        if show_whether_achieved_goal:
+            self.show_whether_achieved_goal()
+        # if self.config.save_model:
+        #     self.locally_save_policy()
+        return self.game_full_episode_scores, self.rolling_results, time_taken
+
+    def rlkit_step(self, visualize=False):
+        """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
+        eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
+        self.episode_step_number_val = 0
+        was_done = False
+        while not self.done:
+            if was_done:
+                self.reset_game()
+
+            self.episode_step_number_val += 1
+            self.action = self.pick_action(eval_ep)
+            self.conduct_action(self.action)
+
+            mask = self.done
+            if not eval_ep:
+                self.memory.add_experience(
+                    self.state, self.action, self.reward, self.next_state, mask
+                )
+            self.state = self.next_state
+            self.global_step_number += 1
+            print(f'global steps : {self.global_step_number}')
+
+            if self.episode_step_number_val >= self.hyperparameters['rlkit_mode_parameters']['explanation_steps_per_step']:
+                break
+
+            if self.episode_step_number_val > self.config.max_episode_steps + 10:
+                was_done = True
+
+        if self.global_step_number > self.hyperparameters["min_steps_before_learning"] and \
+                self.enough_experiences_to_learn_from():
+                
+            for _ in range(self.hyperparameters['rlkit_mode_parameters']['update_steps_per_step']):
+                self.learn()
+
+        if eval_ep:
+            self.print_summary_of_latest_evaluation_episode()
+        self.episode_number += 1
+
+        if visualize and self.global_step_number > self.hyperparameters["min_steps_before_learning"]:
+            from envs.common_envs_utils import episode_visualizer
+            episode_visualizer(
+                env=self.environment,
+                action_picker=lambda state: self.actor_pick_action(state, eval=True),
+                name=self.config.name,
+            )
 
     def step(self, visualize=False):
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
@@ -316,6 +402,11 @@ class SAC(Base_Agent):
 
     def update_all_parameters(self, critic_loss_1, critic_loss_2, actor_loss, alpha_loss):
         """Updates the parameters for the actor, both critics and (if specified) the temperature parameter"""
+
+        # from torch.utils.tensorboard import SummaryWriter
+        # writer = SummaryWriter('test_log_dir')
+        # writer.add_graph(critic_loss_1)
+        # writer.add_graph(actor_loss)
 
         for loss_name, loss_value in [
             ('q1 loss', critic_loss_1),

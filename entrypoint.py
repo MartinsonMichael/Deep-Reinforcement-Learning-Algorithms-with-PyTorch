@@ -76,7 +76,7 @@ def create_config(args):
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
-            "min_steps_before_learning": 50000,
+            "min_steps_before_learning": 300,
             "batch_size": 128,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
@@ -90,7 +90,13 @@ def create_config(args):
             "entropy_term_weight": None,
             "add_extra_noise": True,
             "do_evaluation_iterations": False,
-            "clip_rewards": False
+            "clip_rewards": False,
+
+            "mode_to_use": "rlkit",
+            "rlkit_mode_parameters": {
+                "explanation_steps_per_step": 1000,
+                "update_steps_per_step": 1000,
+            }
         }
     }
     return config
