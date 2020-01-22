@@ -198,7 +198,7 @@ class SAC(Base_Agent):
 
         if self.global_step_number > self.hyperparameters["min_steps_before_learning"] and \
                 self.enough_experiences_to_learn_from():
-                
+
             for _ in range(self.hyperparameters['rlkit_mode_parameters']['update_steps_per_step']):
                 self.learn()
 
