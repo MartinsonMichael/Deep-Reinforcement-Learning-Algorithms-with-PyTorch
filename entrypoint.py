@@ -71,12 +71,12 @@ def create_config(args):
                 "linear_hidden_units": [20, 20],
                 "final_layer_activation": None,
                 "batch_norm": False,
-                "buffer_size": 50000,
+                "buffer_size": 125000,
                 "tau": 0.005,
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
-            "min_steps_before_learning": 15000,
+            "min_steps_before_learning": 50000,
             "batch_size": 128,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
@@ -92,7 +92,7 @@ def create_config(args):
             "do_evaluation_iterations": False,
             "clip_rewards": False,
 
-            "mode_to_use": "rlkit",
+            "mode_to_use": "normal",
             "rlkit_mode_parameters": {
                 "explanation_steps_per_step": 1000,
                 "update_steps_per_step": 1000,
