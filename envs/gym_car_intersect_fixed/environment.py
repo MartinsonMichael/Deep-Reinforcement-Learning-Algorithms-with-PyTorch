@@ -139,7 +139,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
                 bot_car.destroy()
                 del bot_car
 
-    def reset(self):
+    def reset(self, force=False):
         """
         recreate agent car and bots cars_full
         :return: initial state
@@ -152,6 +152,9 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self.bot_cars = []
         for bot_index in range(self.num_bots):
             self.create_bot_car()
+
+        if force:
+            return self.step(None)[0], 0, False, {'was_reset': True}
 
         return self.step(None)[0]
 
@@ -246,7 +249,10 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         if len(self.bot_cars) < self.num_bots:
             self.create_bot_car()
 
-        self.picture_state = self.render(self._preseted_render_mode)
+        try:
+            self.picture_state = self.render(self._preseted_render_mode)
+        except:
+            return self.reset(force=True)
 
         done = self.rewarder.get_step_done(self.car.stats)
         step_reward = self.rewarder.get_step_reward(self.car.stats)
