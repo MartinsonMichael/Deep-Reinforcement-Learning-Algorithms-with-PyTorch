@@ -32,6 +32,38 @@ class TorchTensorCaster(gym.ObservationWrapper):
         return obs
 
 
+class NumpyCaster(gym.ObservationWrapper):
+    def observation(self, obs):
+        if isinstance(obs, dict):
+            return {
+                name: np.array(value)
+                if value is not None
+                else None
+                for name, value in obs.items()
+            }
+        return np.array(obs)
+
+
+class OnlyVectorTaker(gym.ObservationWrapper):
+    def __init__(self, env, vector_dict_name='vector'):
+        super().__init__(env)
+        self._vector_dict_name = vector_dict_name
+        self.observation_space = self.observation_space.spaces[self._vector_dict_name]
+
+    def observation(self, obs):
+        return obs[self._vector_dict_name]
+
+
+class OnlyImageTaker(gym.ObservationWrapper):
+    def __init__(self, env, image_dict_name='picture'):
+        super().__init__(env)
+        self._image_dict_name = image_dict_name
+        self.observation_space = self.observation_space.spaces[self._image_dict_name]
+
+    def observation(self, obs):
+        return obs[self._image_dict_name]
+
+
 class ImageWithVectorCombiner(gym.ObservationWrapper):
     """Take 'pov' value (current game display) and concatenate compass angle information with it, as a new channel of image;
     resulting image has RGB+compass (or K+compass for gray-scaled image) channels.
