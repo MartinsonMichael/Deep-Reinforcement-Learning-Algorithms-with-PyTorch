@@ -41,7 +41,7 @@ def create_config(args):
     else:
         raise NotImplemented
 
-    config.num_episodes_to_run = 1500
+    config.num_episodes_to_run = 15000
     config.file_to_save_data_results = 'result_cars'
     config.file_to_save_results_graph = 'graph_cars'
     config.show_solution_score = True
@@ -71,7 +71,7 @@ def create_config(args):
                 "linear_hidden_units": [20, 20],
                 "final_layer_activation": None,
                 "batch_norm": False,
-                "buffer_size": 120000,
+                "buffer_size": 200000,
                 "tau": 0.005,
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
