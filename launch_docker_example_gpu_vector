@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run --gpus all -v $PWD/logs:/cars/logs -v $PWD/save_animation_folder:/cars/save_animation_folder -it $1 python entrypoint.py --name $2 --env-settings envs/gym_car_intersect_fixed/settings_sets/env_settings__basic_small_rotation.json --device $3 --mode vector
