@@ -32,6 +32,11 @@ class TorchTensorCaster(gym.ObservationWrapper):
         return obs
 
 
+class ToFloatCaster(gym.ObservationWrapper):
+    def observation(self, obs: np.ndarray):
+        return obs.astype(np.float32) / 255
+
+
 class NumpyCaster(gym.ObservationWrapper):
     def observation(self, obs):
         if isinstance(obs, dict):
@@ -65,9 +70,6 @@ class OnlyImageTaker(gym.ObservationWrapper):
 
 
 class ImageWithVectorCombiner(gym.ObservationWrapper):
-    """Take 'pov' value (current game display) and concatenate compass angle information with it, as a new channel of image;
-    resulting image has RGB+compass (or K+compass for gray-scaled image) channels.
-    """
     def __init__(self, env, image_dict_name='picture', vector_dict_name='vector', vector_pre_scale=255.0):
         super().__init__(env)
         self._image_name = image_dict_name
@@ -83,17 +85,10 @@ class ImageWithVectorCombiner(gym.ObservationWrapper):
         self.observation_space = gym.spaces.Box(low=low, high=high, dtype=np.float32)
 
     def observation(self, observation):
-
-        # print(f"combiner input image shape : {observation['picture'].shape}")
-
         image = observation[self._image_name]
         vector = observation[self._vector_name] * self._vector_pre_scale
         vector_channel = np.ones(shape=list(image.shape[:-1]) + [len(vector)], dtype=np.float32) * vector
-        res = np.concatenate([image.astype(np.float32), vector_channel], axis=-1)
-
-        # print(f"combiner output image shape : {res.shape}")
-
-        return res
+        return np.concatenate([image.astype(np.float32), vector_channel], axis=-1)
 
 
 class ChannelSwapper(gym.ObservationWrapper):

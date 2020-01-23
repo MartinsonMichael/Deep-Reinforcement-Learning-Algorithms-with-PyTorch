@@ -3,6 +3,8 @@ import os
 import sys
 from os.path import dirname, abspath
 
+from envs.common_envs_utils.env_makers import make_CarRacing_fixed_vector_features
+
 sys.path.append(dirname(dirname(abspath(__file__))))
 
 from agents.actor_critic_agents.SAC import SAC
@@ -38,6 +40,8 @@ def create_config(args):
     config.environment = None
     if args.mode == 'both':
         config.environment = create_env_both(args.env_settings)
+    elif args.mode == 'vector':
+        config.environment = make_CarRacing_fixed_vector_features(args.env_settings)()
     else:
         raise NotImplemented
 
@@ -92,11 +96,11 @@ def create_config(args):
             "do_evaluation_iterations": False,
             "clip_rewards": False,
 
-            "mode_to_use": "normal",
-            "rlkit_mode_parameters": {
-                "explanation_steps_per_step": 1000,
-                "update_steps_per_step": 1000,
-            }
+            # "mode_to_use": "normal",
+            # "rlkit_mode_parameters": {
+            #     "explanation_steps_per_step": 1000,
+            #     "update_steps_per_step": 1000,
+            # }
         }
     }
     return config
