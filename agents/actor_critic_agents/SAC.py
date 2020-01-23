@@ -1,3 +1,5 @@
+import os
+import pickle
 import time
 
 from agents.Base_Agent import Base_Agent
@@ -27,13 +29,16 @@ class SAC(Base_Agent):
       to maximise the entropy of their actions as well as their cumulative reward"""
     agent_name = "SAC"
 
-    def __init__(self, config):
+    def __init__(self, config, name):
         Base_Agent.__init__(self, config)
+        self.name = name
         assert self.action_types == "CONTINUOUS", "Action types must be continuous. Use SAC Discrete instead for " \
                                                   "discrete actions "
         assert self.config.hyperparameters["Actor"]["final_layer_activation"] != "Softmax", "Final actor layer must " \
                                                                                             "not be softmax "
         self.hyperparameters = config.hyperparameters
+
+        self.folder_save_path = os.path.join('model_saves', self.name)
 
         self.critic_local = QNet(
             state_description=self.config.environment.observation_space,
@@ -117,6 +122,7 @@ class SAC(Base_Agent):
 
         self.do_evaluation_iterations = self.hyperparameters["do_evaluation_iterations"]
         self._game_stats = {}
+        self._last_episode_save_count = 0
 
     def save_result(self):
         """Saves the result of an episode of the game. Overriding the method in Base Agent that does this because we only
@@ -227,6 +233,7 @@ class SAC(Base_Agent):
     #         )
 
     def step(self, visualize=False):
+        self._last_episode_save_count += 1
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
         eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
         self.episode_step_number_val = 0
@@ -264,6 +271,54 @@ class SAC(Base_Agent):
                 action_picker=lambda state: self.actor_pick_action(state, eval=True),
                 name=self.config.name,
             )
+
+        if self._last_episode_save_count >= self.hyperparameters['save_frequency_episode']:
+            self._last_episode_save_count = 0
+            self.save()
+
+    def save(self):
+        current_save_path = os.path.join(
+            self.folder_save_path,
+            f"{self.name}_episode_{self.episode_number}_time_{time.time()}"
+        )
+        os.makedirs(current_save_path)
+
+        torch.save(self.critic_local.state_dict(), os.path.join(current_save_path, 'critic_local'))
+        torch.save(self.critic_optimizer.state_dict(), os.path.join(current_save_path, 'critic_optimizer'))
+        torch.save(self.critic_target.state_dict(), os.path.join(current_save_path, 'critic_target'))
+
+        torch.save(self.critic_local_2.state_dict(), os.path.join(current_save_path, 'critic_local_2'))
+        torch.save(self.critic_optimizer_2.state_dict(), os.path.join(current_save_path, 'critic_optimizer_2'))
+        torch.save(self.critic_target_2.state_dict(), os.path.join(current_save_path, 'critic_target_2'))
+
+        torch.save(self.actor_local.state_dict(), os.path.join(current_save_path, 'actor_local'))
+        torch.save(self.actor_optimizer.state_dict(), os.path.join(current_save_path, 'actor_optimizer'))
+
+        torch.save(self.alpha, os.path.join(current_save_path, 'alpha'))
+        torch.save(self.alpha_optim.state_dict(), os.path.join(current_save_path, 'alpha_optim'))
+
+        pickle.dump((
+            self.global_step_number,
+            self.episode_number,
+
+        ), open(os.path.join(current_save_path, 'stats.pkl'), 'wb'))
+
+        return current_save_path
+
+    def load(self, folder):
+
+        for model_name in ['critic_local', 'critic_target', 'critic_optimizer',
+                           'critic_local_2', 'critic_target_2', 'critic_optimizer_2',
+                           'actor_local', 'actor_optimizer',
+                           'alpha_optim']:
+            self.__getattribute__(model_name).load_state_dict(torch.load(os.path.join(folder, model_name)))
+
+        self.alpha = torch.load(os.path.join(folder, 'alpha'))
+
+        self.global_step_number, self.episode_number = pickle.load(
+            open(os.path.join(folder, 'stats.pkl'), 'rb')
+        )
+
 
     def update_stats_due_to_step_info(self, info, reward, done):
         if not done:

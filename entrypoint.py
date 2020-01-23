@@ -80,6 +80,7 @@ def create_config(args):
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
+            "save_frequency_episode": 3000,
             "min_steps_before_learning": 50000,
             "batch_size": 128,
             "discount_rate": 0.99,
@@ -120,7 +121,7 @@ def main(args):
     agent_config.hyperparameters = agent_config.hyperparameters['Actor_Critic_Agents']
     print("AGENT NAME: {}".format('SAC'))
 
-    agent = SAC(agent_config)
+    agent = SAC(agent_config, name=args.name)
 
     print(agent.hyperparameters)
 
