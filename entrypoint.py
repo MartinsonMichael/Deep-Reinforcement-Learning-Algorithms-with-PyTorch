@@ -142,7 +142,7 @@ if __name__ == "__main__":
     parser.add_argument('--mode', type=str, default='both', help='image only, vector only, or their combination')
     parser.add_argument('--env-settings', type=str, default='test', help='path to CarRacing env settings')
     parser.add_argument('--device', type=str, default='cpu', help='path to CarRacing env settings')
-    parser.add_argument('--load', type=str, help='path to load model')
+    parser.add_argument('--load', type=str, default=None, help='path to load model')
     parser.add_argument('--start-buffer-random-ratio', type=float, default=1.0,
                         help='ratio of random action for replay buffer pre-fill, useful for loaded agents'
                         )
