@@ -137,7 +137,7 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
                 print(f'{self._process_name} : enter optimizer_lock to copy shared model')
                 # Base_Agent.copy_model_over(self.shared_model, self.local_model)
 
-                for index, to_model, from_model in enumerate(zip(self.local_model.parameters(), self.shared_model.parameters())):
+                for index, (to_model, from_model) in enumerate(zip(self.local_model.parameters(), self.shared_model.parameters())):
                     print(f'copy step : {index} / {len(self.local_model.parameters())}')
                     print(f'shape : {to_model.data.shape}')
                     to_model.data.copy_(from_model.data.clone())
