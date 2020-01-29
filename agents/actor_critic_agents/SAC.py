@@ -356,13 +356,18 @@ class SAC(Base_Agent):
          The difference between evaluation and training mode is that training mode does more exploration"""
         if state is None:
             state = self.state
+
         if eval_ep:
             action = self.actor_pick_action(state=state, eval=True)
-        elif self.global_step_number < self.hyperparameters["min_steps_before_learning"]:
-            action = np.random.uniform(-1, 1, self.environment.action_space.shape)
-            print("Picking random action ", action)
         else:
-            action = self.actor_pick_action(state=state)
+            if len(self.memory) < self.hyperparameters["min_steps_before_learning"]:
+                if len(self.memory) < self.config.random_replay_prefill_ration * self.hyperparameters["min_steps_before_learning"]:
+                    action = np.random.uniform(-1, 1, self.environment.action_space.shape)
+                else:
+                    action = self.actor_pick_action(state=state, eval=False)
+                print("Picking random action ", action)
+            else:
+                action = self.actor_pick_action(state=state)
         if self.add_extra_noise:
             action += self.noise.sample()
         return action

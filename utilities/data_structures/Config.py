@@ -18,5 +18,5 @@ class Config(object):
         self.randomise_random_seed = True
         self.show_solution_score = False
         self.debug_mode = False
-
+        self.random_replay_prefill_ration = 1.0
 

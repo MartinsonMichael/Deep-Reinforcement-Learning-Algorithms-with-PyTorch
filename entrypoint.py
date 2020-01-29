@@ -58,6 +58,7 @@ def create_config(args):
     config.randomise_random_seed = True
     config.save_model = True
     config.max_episode_steps = 300
+    config.random_replay_prefill_ration = args.start_buffer_random_ratio
 
     config.hyperparameters = {
         "Actor_Critic_Agents": {
@@ -142,6 +143,9 @@ if __name__ == "__main__":
     parser.add_argument('--env-settings', type=str, default='test', help='path to CarRacing env settings')
     parser.add_argument('--device', type=str, default='cpu', help='path to CarRacing env settings')
     parser.add_argument('--load', type=str, help='path to load model')
+    parser.add_argument('--start-buffer-random-ratio', type=float, default=1.0,
+                        help='ratio of random action for replay buffer pre-fill, useful for loaded agents'
+                        )
     args = parser.parse_args()
 
     if args.mode not in ['image', 'vector', 'both']:
