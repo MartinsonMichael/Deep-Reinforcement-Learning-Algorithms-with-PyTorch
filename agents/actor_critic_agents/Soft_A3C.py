@@ -33,7 +33,7 @@ class Soft_A3C(Base_Agent):
             eps=1e-4,
         )
 
-    def run_n_episodes(self):
+    def run_n_episodes(self, tf_saver=None, visualize=False):
         """Runs game to completion n times and then summarises results and saves model (if asked to)"""
         start = time.time()
         results_queue = Queue()
