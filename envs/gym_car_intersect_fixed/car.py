@@ -215,7 +215,7 @@ class DummyCar:
         if 'hull_angle' in self.data_loader.car_features_list:
             state.extend([self._hull.angle, np.sin(self._hull.angle), np.cos(self._hull.angle)])
 
-        if 'speed' in self.data_loader.car_features_list:
+        if 'car_speed' in self.data_loader.car_features_list:
             state.extend([
                 self._hull.linearVelocity.x / 1000,
                 self._hull.linearVelocity.y / 1000,
