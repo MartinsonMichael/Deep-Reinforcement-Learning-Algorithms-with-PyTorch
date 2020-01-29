@@ -29,7 +29,7 @@ class Soft_A3C(Base_Agent):
         )
         self.actor_critic_optimizer = SharedAdam(
             self.actor_critic.parameters(),
-            lr=self.hyperparameters["learning_rate"],
+            lr=3e-4,
             eps=1e-4,
         )
 
