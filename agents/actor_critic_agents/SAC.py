@@ -79,7 +79,7 @@ class SAC(Base_Agent):
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
         Base_Agent.copy_model_over(self.critic_local_2, self.critic_target_2)
 
-        if self.config.environment.observation_space.shape == 1:
+        if len(self.config.environment.observation_space.shape) == 1:
             self.memory = Torch_Replay_Buffer(
                 self.hyperparameters["Critic"]["buffer_size"],
                 self.hyperparameters["batch_size"],
