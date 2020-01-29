@@ -1,3 +1,5 @@
+from typing import Dict
+
 import cv2
 import gym
 import numpy as np
@@ -18,35 +20,25 @@ class OriginalStateKeeper(gym.ObservationWrapper):
         return observation
 
 
-class TorchTensorCaster(gym.ObservationWrapper):
-    def observation(self, obs):
-        if isinstance(obs, dict):
-            return {
-                name: torch.from_numpy(value)
-                if value is not None
-                else None
-                for name, value in obs.items()
-            }
-        if isinstance(obs, np.ndarray):
-            torch.from_numpy(obs)
+class ImageToFloat(gym.ObservationWrapper):
+    def __init__(self, env, image_dict_name='picture'):
+        super().__init__(env)
+        self._image_dict_name = image_dict_name
+        if isinstance(self.observation_space, gym.spaces.Dict):
+            self.observation_space.spaces[self._image_dict_name] = gym.spaces.Box(
+                low=0.0,
+                high=1.0,
+                dtype=np.float32,
+                shape=self.observation_space.spaces[self._image_dict_name].shape,
+            )
+        else:
+            raise ValueError('')
+
+    def observation(self, obs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        obs.update({
+            self._image_dict_name: np.array(obs[self._image_dict_name]).astype(np.float32) / 256
+        })
         return obs
-
-
-class ToFloatCaster(gym.ObservationWrapper):
-    def observation(self, obs: np.ndarray):
-        return obs.astype(np.float32) / 255
-
-
-class NumpyCaster(gym.ObservationWrapper):
-    def observation(self, obs):
-        if isinstance(obs, dict):
-            return {
-                name: np.array(value)
-                if value is not None
-                else None
-                for name, value in obs.items()
-            }
-        return np.array(obs)
 
 
 class OnlyVectorTaker(gym.ObservationWrapper):
@@ -70,11 +62,10 @@ class OnlyImageTaker(gym.ObservationWrapper):
 
 
 class ImageWithVectorCombiner(gym.ObservationWrapper):
-    def __init__(self, env, image_dict_name='picture', vector_dict_name='vector', vector_pre_scale=255.0):
+    def __init__(self, env, image_dict_name='picture', vector_dict_name='vector'):
         super().__init__(env)
         self._image_name = image_dict_name
         self._vector_name = vector_dict_name
-        self._vector_pre_scale = vector_pre_scale
 
         image_space = self.env.observation_space.spaces[self._image_name]
         vector_space = self.env.observation_space.spaces[self._vector_name]
@@ -86,7 +77,7 @@ class ImageWithVectorCombiner(gym.ObservationWrapper):
 
     def observation(self, observation):
         image = observation[self._image_name]
-        vector = observation[self._vector_name] * self._vector_pre_scale
+        vector = observation[self._vector_name]
         vector_channel = np.ones(shape=list(image.shape[:-1]) + [len(vector)], dtype=np.float32) * vector
         return np.concatenate([image.astype(np.float32), vector_channel], axis=-1)
 

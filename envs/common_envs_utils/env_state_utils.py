@@ -8,7 +8,7 @@ def from_combined_state_to_image_vector(state: np.ndarray) -> Tuple[np.ndarray, 
 
     state_picture, state_vector = np.split(state, [3], axis=2)
 
-    return state_picture.astype(np.uint8), state_vector[0, 0, :]
+    return (state_picture * 256.0).astype(np.uint8), state_vector[0, 0, :]
 
 
 def from_image_vector_to_combined_state(image: np.ndarray, vector: np.ndarray) -> np.ndarray:
