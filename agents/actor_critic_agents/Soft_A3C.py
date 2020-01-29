@@ -98,7 +98,7 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
                  config, episodes_to_run, epsilon_decay_denominator, action_size, action_types, results_queue,
                  local_model, gradient_updates_queue):
         super(Actor_Critic_Worker, self).__init__()
-        self.environment = make_CarRacing_fixed_combined_features(environment_settings)
+        self.environment = make_CarRacing_fixed_combined_features(environment_settings)()
         self.config = config
         self.worker_num = worker_num
 
