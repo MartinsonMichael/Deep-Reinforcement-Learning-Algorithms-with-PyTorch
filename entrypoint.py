@@ -125,7 +125,8 @@ def main(args):
     agent = SAC(agent_config, name=args.name)
 
     if args.load is not None:
-        print(f'Load agent from : {args.load}')
+        print(args.load)
+        print(f"Load agent from : {args.load}")
         agent.load(args.load)
 
     print(agent.hyperparameters)
