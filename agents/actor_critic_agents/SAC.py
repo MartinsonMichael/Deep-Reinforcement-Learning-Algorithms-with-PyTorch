@@ -264,7 +264,7 @@ class SAC(Base_Agent):
             self.print_summary_of_latest_evaluation_episode()
         self.episode_number += 1
 
-        if visualize and self.global_step_number > self.hyperparameters["min_steps_before_learning"]:
+        if visualize and len(self.memory) > self.hyperparameters["min_steps_before_learning"]:
             from envs.common_envs_utils import episode_visualizer
             episode_visualizer(
                 env=self.environment,
@@ -335,7 +335,7 @@ class SAC(Base_Agent):
         self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()[0]
 
     def create_tf_charts(self, tf_writer):
-        if self.global_step_number < self.hyperparameters['min_steps_before_learning']:
+        if len(self.memory) < self.hyperparameters['min_steps_before_learning']:
             return
         with tf_writer.as_default():
             tf.summary.scalar(
@@ -406,7 +406,7 @@ class SAC(Base_Agent):
         return (
                 len(self.memory) > self.hyperparameters["min_steps_before_learning"] and
                 self.enough_experiences_to_learn_from() and
-                self.global_step_number % self.hyperparameters["update_every_n_steps"] == 0
+                len(self.memory) % self.hyperparameters["update_every_n_steps"] == 0
         )
 
     def learn(self):
