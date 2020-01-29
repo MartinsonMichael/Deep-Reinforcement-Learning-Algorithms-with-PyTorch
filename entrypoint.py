@@ -11,11 +11,7 @@ sys.path.append(dirname(dirname(abspath(__file__))))
 from agents.actor_critic_agents.SAC import SAC
 from utilities.data_structures.Config import Config
 
-import chainerrl
 import tensorflow as tf
-from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, FrameCompressor, OriginalStateKeeper, \
-    ImageWithVectorCombiner, ChannelSwapper, TorchTensorCaster
-from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
 
 
 def create_config(args):
