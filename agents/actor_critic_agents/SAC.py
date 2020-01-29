@@ -319,7 +319,6 @@ class SAC(Base_Agent):
             open(os.path.join(folder, 'stats.pkl'), 'rb')
         )
 
-
     def update_stats_due_to_step_info(self, info, reward, done):
         if not done:
             return
