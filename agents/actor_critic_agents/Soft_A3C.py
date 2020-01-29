@@ -20,7 +20,7 @@ class Soft_A3C(Base_Agent):
         super(Soft_A3C, self).__init__(config)
         self.name = name
         # self.num_processes = multiprocessing.cpu_count()
-        self.num_processes = 8
+        self.num_processes = 2
         self.worker_processes = max(1, self.num_processes - 2)
         # self.actor_critic = self.create_NN(input_dim=self.state_size, output_dim=[self.action_size, 1])
         self.actor_critic = AdvNet(
