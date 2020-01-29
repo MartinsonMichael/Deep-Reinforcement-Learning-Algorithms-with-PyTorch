@@ -8,6 +8,7 @@ from torch.multiprocessing import Queue
 from torch.optim import Adam
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.advantage_utils_continues import AdvNet
+from envs import make_CarRacing_fixed_combined_features
 from utilities.Utility_Functions import create_actor_distribution, SharedAdam
 
 
@@ -49,7 +50,9 @@ class Soft_A3C(Base_Agent):
         optimizer_worker.start()
 
         for process_num in range(self.worker_processes):
-            worker = Actor_Critic_Worker(process_num, copy.deepcopy(self.environment), self.actor_critic,
+            worker = Actor_Critic_Worker(process_num,
+                                         self.config.env_settings, # copy.deepcopy(self.environment),
+                                         self.actor_critic,
                                          episode_number, self.optimizer_lock,
                                          self.actor_critic_optimizer, self.config, episodes_per_process,
                                          self.hyperparameters["epsilon_decay_rate_denominator"],
@@ -91,11 +94,11 @@ class Soft_A3C(Base_Agent):
 class Actor_Critic_Worker(torch.multiprocessing.Process):
     """Actor critic worker that will play the game for the designated number of episodes """
 
-    def __init__(self, worker_num, environment, shared_model, counter, optimizer_lock, shared_optimizer,
+    def __init__(self, worker_num, environment_settings, shared_model, counter, optimizer_lock, shared_optimizer,
                  config, episodes_to_run, epsilon_decay_denominator, action_size, action_types, results_queue,
                  local_model, gradient_updates_queue):
         super(Actor_Critic_Worker, self).__init__()
-        self.environment = environment()
+        self.environment = make_CarRacing_fixed_combined_features(environment_settings)
         self.config = config
         self.worker_num = worker_num
 

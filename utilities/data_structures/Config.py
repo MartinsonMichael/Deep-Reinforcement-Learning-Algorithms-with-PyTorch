@@ -19,4 +19,5 @@ class Config(object):
         self.show_solution_score = False
         self.debug_mode = False
         self.random_replay_prefill_ration = 1.0
+        self.env_settings = None
 
