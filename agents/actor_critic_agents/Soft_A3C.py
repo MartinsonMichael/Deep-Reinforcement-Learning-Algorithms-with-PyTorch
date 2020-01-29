@@ -135,7 +135,11 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
         for ep_ix in range(self.episodes_to_run):
             with self.optimizer_lock:
                 print(f'{self._process_name} : enter optimizer_lock to copy shared model')
-                Base_Agent.copy_model_over(self.shared_model, self.local_model)
+                # Base_Agent.copy_model_over(self.shared_model, self.local_model)
+
+                for to_model, from_model in zip(self.local_model.parameters(), self.shared_model.parameters()):
+                    print('copy step : {}')
+                    to_model.data.copy_(from_model.data.clone())
 
                 print(f'{self._process_name} : leave optimizer_lock')
 
@@ -180,7 +184,8 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
     def reset_game_for_worker(self):
         """Resets the game environment so it is ready to play a new episode"""
         state = self.environment.reset()
-        if self.action_types == "CONTINUOUS": self.noise.reset()
+        if self.action_types == "CONTINUOUS":
+            self.noise.reset()
         return state
 
     def pick_action_and_get_critic_values(self, policy, state, epsilon_exploration=None):
