@@ -216,3 +216,32 @@ class Policy(nn.Module):
         x = F.relu(self._dense2(x))
         x = self._head(x)
         return x
+
+
+class AdvNet(nn.Module):
+    def __init__(self, state_description: Dict[str, Any], action_size, hidden_size, device):
+        super(AdvNet, self).__init__()
+        self._device = device
+        self._action_size = action_size
+
+        self._state_layer = NewStateLayer(state_description, hidden_size, device)
+
+        self._dense2 = nn.Linear(in_features=self._state_layer.get_out_shape_for_in(), out_features=hidden_size).to(
+            self._device)
+        torch.nn.init.xavier_uniform_(self._dense2.weight)
+        torch.nn.init.constant_(self._dense2.bias, 0)
+
+        self._head = nn.Linear(in_features=hidden_size, out_features=2 * action_size).to(self._device)
+        torch.nn.init.xavier_uniform_(self._head.weight)
+        torch.nn.init.constant_(self._head.bias, 0)
+
+        self._head_v = nn.Linear(in_features=hidden_size, out_features=1).to(self._device)
+        torch.nn.init.xavier_uniform_(self._head_v.weight)
+        torch.nn.init.constant_(self._head_v.bias, 0)
+
+    def forward(self, state):
+        x = F.relu(self._state_layer(state))
+        x = F.relu(self._dense2(x))
+        action_out = self._head(x)
+        value_out = self._head_v(x)
+        return action_out, value_out
