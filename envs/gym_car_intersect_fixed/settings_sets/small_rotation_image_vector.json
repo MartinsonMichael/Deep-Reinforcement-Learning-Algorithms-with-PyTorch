@@ -19,8 +19,7 @@
     "picture": true,
     "vector_car_features": [
       "hull_position",
-      "hull_angle",
-      "car_speed"
+      "hull_angle"
     ]
   },
   "reward": {
