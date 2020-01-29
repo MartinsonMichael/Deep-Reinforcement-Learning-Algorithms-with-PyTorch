@@ -141,6 +141,7 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
                     print(f'copy step : {index} / {len([self.local_model.parameters()])}')
                     print(f'shape : {to_model.data.shape}')
                     to_model.data.copy_(from_model.data.clone())
+                    print('copy : done')
 
                 print(f'{self._process_name} : leave optimizer_lock')
 
