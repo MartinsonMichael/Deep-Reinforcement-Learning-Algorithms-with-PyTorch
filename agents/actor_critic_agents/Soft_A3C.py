@@ -99,6 +99,7 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
                  config, episodes_to_run, epsilon_decay_denominator, action_size, action_types, results_queue,
                  local_model, gradient_updates_queue):
         super(Actor_Critic_Worker, self).__init__()
+        self._process_name = f"ActorCritic_Worker_{worker_num}"
         self.environment = make_CarRacing_fixed_combined_features(environment_settings)()
         self.config = config
         self.worker_num = worker_num
@@ -133,6 +134,7 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
         """Starts the worker"""
         for ep_ix in range(self.episodes_to_run):
             with self.optimizer_lock:
+                print(f'{self._process_name} : enter optimizer_lock to copy shared model')
                 Base_Agent.copy_model_over(self.shared_model, self.local_model)
             epsilon_exploration = self.calculate_new_exploration()
             state = self.reset_game_for_worker()
@@ -159,6 +161,7 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
             self.put_gradients_in_queue(total_loss)
             self.episode_number += 1
             with self.counter.get_lock():
+                print(f'{self._process_name} : enter counter.get_lock()')
                 self.counter.value += 1
                 self.results_queue.put(np.sum(self.episode_rewards))
 
