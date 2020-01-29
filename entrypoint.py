@@ -44,6 +44,8 @@ def create_config(args):
         config.environment = make_CarRacing_fixed_vector_features(args.env_settings)()
     else:
         raise NotImplemented
+    config.env_settings = args.env_settings
+    config.mode = args.mode
 
     config.num_episodes_to_run = 15000
     config.file_to_save_data_results = 'result_cars'
