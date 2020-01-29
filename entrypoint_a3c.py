@@ -23,9 +23,9 @@ def create_config(args):
     config.seed = 1
     config.environment = None
     if args.mode == 'both':
-        config.environment = make_CarRacing_fixed_combined_features(args.env_settings)()
+        config.environment = make_CarRacing_fixed_combined_features(args.env_settings)
     elif args.mode == 'vector':
-        config.environment = make_CarRacing_fixed_vector_features(args.env_settings)()
+        config.environment = make_CarRacing_fixed_vector_features(args.env_settings)
     else:
         raise NotImplemented
 

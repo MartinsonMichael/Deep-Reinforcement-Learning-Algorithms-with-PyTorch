@@ -22,7 +22,7 @@ class Soft_A3C(Base_Agent):
         self.worker_processes = max(1, self.num_processes - 2)
         # self.actor_critic = self.create_NN(input_dim=self.state_size, output_dim=[self.action_size, 1])
         self.actor_critic = AdvNet(
-            state_description=self.config.environment.observation_space,
+            state_description=self.config.environment().observation_space,
             action_size=self.action_size,
             hidden_size=256,
             device=self.device,
@@ -95,7 +95,7 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
                  config, episodes_to_run, epsilon_decay_denominator, action_size, action_types, results_queue,
                  local_model, gradient_updates_queue):
         super(Actor_Critic_Worker, self).__init__()
-        self.environment = environment
+        self.environment = environment()
         self.config = config
         self.worker_num = worker_num
 
