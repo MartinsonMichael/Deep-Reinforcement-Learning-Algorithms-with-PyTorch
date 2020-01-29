@@ -123,6 +123,10 @@ def main(args):
 
     agent = SAC(agent_config, name=args.name)
 
+    if args.load is not None:
+        print(f'Load agent from : {args.load}')
+        agent.load(args.load)
+
     print(agent.hyperparameters)
 
     print("RANDOM SEED ", agent_config.seed)
@@ -137,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument('--mode', type=str, default='both', help='image only, vector only, or their combination')
     parser.add_argument('--env-settings', type=str, default='test', help='path to CarRacing env settings')
     parser.add_argument('--device', type=str, default='cpu', help='path to CarRacing env settings')
+    parser.add_argument('--load', type=str, help='path to load model')
     args = parser.parse_args()
 
     if args.mode not in ['image', 'vector', 'both']:
