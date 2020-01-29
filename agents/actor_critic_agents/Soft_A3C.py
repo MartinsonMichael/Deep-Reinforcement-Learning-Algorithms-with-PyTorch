@@ -136,6 +136,9 @@ class Actor_Critic_Worker(torch.multiprocessing.Process):
             with self.optimizer_lock:
                 print(f'{self._process_name} : enter optimizer_lock to copy shared model')
                 Base_Agent.copy_model_over(self.shared_model, self.local_model)
+
+                print(f'{self._process_name} : leave optimizer_lock')
+
             epsilon_exploration = self.calculate_new_exploration()
             state = self.reset_game_for_worker()
             done = False
