@@ -79,21 +79,22 @@ class SAC(Base_Agent):
         Base_Agent.copy_model_over(self.critic_local, self.critic_target)
         Base_Agent.copy_model_over(self.critic_local_2, self.critic_target_2)
 
-        # self.memory = Torch_Replay_Buffer(
-        #     self.hyperparameters["Critic"]["buffer_size"],
-        #     self.hyperparameters["batch_size"],
-        #     self.config.seed,
-        #     device=self.device,
-        # )
-
-        self.memory = Torch_Separated_Replay_Buffer(
-            self.hyperparameters["Critic"]["buffer_size"],
-            self.hyperparameters["batch_size"],
-            self.config.seed,
-            device=self.device,
-            state_extractor=from_combined_state_to_image_vector,
-            state_producer=from_image_vector_to_combined_state,
-        )
+        if self.config.environment.observation_space.shape == 1:
+            self.memory = Torch_Replay_Buffer(
+                self.hyperparameters["Critic"]["buffer_size"],
+                self.hyperparameters["batch_size"],
+                self.config.seed,
+                device=self.device,
+            )
+        else:
+            self.memory = Torch_Separated_Replay_Buffer(
+                self.hyperparameters["Critic"]["buffer_size"],
+                self.hyperparameters["batch_size"],
+                self.config.seed,
+                device=self.device,
+                state_extractor=from_combined_state_to_image_vector,
+                state_producer=from_image_vector_to_combined_state,
+            )
 
         self.actor_local = Policy(
             state_description=self.config.environment.observation_space,
