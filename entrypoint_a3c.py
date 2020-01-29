@@ -66,6 +66,13 @@ def create_config(args):
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
+
+            "learning_rate": 3e-4,
+            "gradient_clipping_norm": 5.0,
+            "epsilon_decay_rate_denominator": 1.0,
+            "normalise_rewards": False,
+            "exploration_worker_difference": 2.0,
+
             "save_frequency_episode": 500,
             "min_steps_before_learning": 50000,
             "batch_size": 128,
