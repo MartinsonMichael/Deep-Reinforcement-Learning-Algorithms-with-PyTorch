@@ -3,7 +3,8 @@ import os
 import sys
 from os.path import dirname, abspath
 
-from envs.common_envs_utils.env_makers import make_CarRacing_fixed_vector_features
+from envs.common_envs_utils.env_makers import make_CarRacing_fixed_vector_features, \
+    make_CarRacing_fixed_combined_features
 
 sys.path.append(dirname(dirname(abspath(__file__))))
 
@@ -17,29 +18,12 @@ from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, 
 from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
 
 
-def create_env_both(settings_path=None):
-    env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
-    # -> dict[(.., .., 3), (16)]
-    env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
-    env = ExtendedMaxAndSkipEnv(env, skip=4)
-    env = FrameCompressor(env)
-    # -> dict[(84, 84, 3), (16)]
-    # env = OriginalStateKeeper(env, 'uncombined_state')
-    env = ImageWithVectorCombiner(env)
-    # -> Box(84, 84, 19)
-    env = ChannelSwapper(env)
-    # -> Box(19, 84, 84)
-    env = TorchTensorCaster(env)
-    env._max_episode_steps = 250
-    return env
-
-
 def create_config(args):
     config = Config()
     config.seed = 1
     config.environment = None
     if args.mode == 'both':
-        config.environment = create_env_both(args.env_settings)
+        config.environment = make_CarRacing_fixed_combined_features(args.env_settings)()
     elif args.mode == 'vector':
         config.environment = make_CarRacing_fixed_vector_features(args.env_settings)()
     else:
