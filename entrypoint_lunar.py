@@ -12,14 +12,11 @@ from utilities.data_structures.Config import Config
 
 import chainerrl
 import tensorflow as tf
-from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, FrameCompressor, OriginalStateKeeper, \
-    ImageWithVectorCombiner, ChannelSwapper, TorchTensorCaster
 
 
 def create_env_vector():
     env = gym.make("LunarLanderContinuous-v2")
     env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
-    env = TorchTensorCaster(env)
     env._max_episode_steps = 250
     return env
 
@@ -27,7 +24,6 @@ def create_env_vector():
 def create_config(args):
     config = Config()
     config.seed = 1
-    config.environment = None
     config.environment = create_env_vector()
 
     config.num_episodes_to_run = 1500
