@@ -63,10 +63,10 @@ def from_image_vector_to_combined_state(image: Union[np.ndarray, None], vector: 
 def _prepare_image_to_buffer(image: np.ndarray) -> np.ndarray:
     if image.dtype == np.uint8:
         return image
-    return np.clip(a=image * 255, a_min=0.0, a_max=255.0).astype(np.uint8)
+    return np.clip(a=image * 255.0, a_min=0.0, a_max=255.0).astype(np.uint8)
 
 
 def _prepare_image_to_model(image: np.ndarray) -> np.ndarray:
     if image.dtype == np.uint8:
-        return image.astype(np.float32) / 255
+        return image.astype(np.float32) / 255.0
     return image

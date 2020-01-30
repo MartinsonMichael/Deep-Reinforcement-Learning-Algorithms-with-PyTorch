@@ -68,7 +68,18 @@ class Torch_Separated_Replay_Buffer(object):
             next_state_vector,
             done
         ))
-   
+
+        # from pympler import asizeof
+        # from sys import getsizeof
+        # print(f'buffer len is {len(self.memory)} and it take {asizeof.asizeof(self.memory) / 1024 / 1024} MB')
+        # print(f'buffer len is {len(self.memory)} and it take {len(self.memory) * asizeof.asizeof(self.memory[0]) / 1024**2} MB')
+
+        # byte_per_exp = state_picture.nbytes + state_vector.nbytes + action.nbytes + getsizeof(reward) + next_state_picture.nbytes + next_state_vector.nbytes + getsizeof(done)
+        # print(f'bytes per exp : {byte_per_exp}')
+        # print(f'getsizeof(self.memory) : {getsizeof(self.memory)}')
+        # TOPEST way :)
+        # print(f'buffer len is {len(self.memory)} and it take {(getsizeof(self.memory) + len(self.memory) * byte_per_exp) / 1024 ** 2} MB')
+
     def sample(self, num_experiences=None):
         """Draws a random sample of experience from the replay buffer"""
         experiences = self.pick_experiences(num_experiences)
