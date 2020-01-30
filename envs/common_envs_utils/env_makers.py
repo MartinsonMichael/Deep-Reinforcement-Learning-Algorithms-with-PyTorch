@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 import chainerrl
@@ -7,6 +8,20 @@ from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, 
     ImageWithVectorCombiner, ChannelSwapper, OnlyImageTaker, OnlyVectorTaker, \
     ImageToFloat
 from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
+
+
+def get_state_type_from_settings_path(settings_path: str) -> str:
+    settings = json.load(open(settings_path))
+    have_image = settings['state_config']['picture']
+    have_vector = len(settings['state_config']['vector_car_features']) != 0
+    if have_image and have_vector:
+        return 'both'
+    elif have_vector:
+        return 'vector'
+    elif have_image:
+        return 'image'
+
+    raise ValueError(f'unknown state type on path : {settings_path}')
 
 
 def make_CarRacing_fixed_for_rainbow(settings_path: str, name: Optional[str] = None):

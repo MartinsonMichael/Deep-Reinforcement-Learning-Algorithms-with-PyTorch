@@ -4,7 +4,7 @@ import sys
 from os.path import dirname, abspath
 
 from envs.common_envs_utils.env_makers import make_CarRacing_fixed_vector_features, \
-    make_CarRacing_fixed_combined_features, make_CarRacing_fixed_image_features
+    make_CarRacing_fixed_combined_features, make_CarRacing_fixed_image_features, get_state_type_from_settings_path
 
 sys.path.append(dirname(dirname(abspath(__file__))))
 
@@ -18,17 +18,18 @@ def create_config(args):
     config = Config()
     config.seed = 1
     config.environment = None
-    if args.mode == 'both':
-        config.environment = make_CarRacing_fixed_combined_features(args.env_settings)()
-    elif args.mode == 'vector':
-        config.environment = make_CarRacing_fixed_vector_features(args.env_settings)()
-    elif args.mode == 'image':
-        config.environment = make_CarRacing_fixed_image_features(args.env_settings)()
 
+    mode = get_state_type_from_settings_path(args.env_settings)
+    if mode == 'both':
+        config.environment = make_CarRacing_fixed_combined_features(args.env_settings)()
+    elif mode == 'vector':
+        config.environment = make_CarRacing_fixed_vector_features(args.env_settings)()
+    elif mode == 'image':
+        config.environment = make_CarRacing_fixed_image_features(args.env_settings)()
     else:
-        raise NotImplemented
+        raise ValueError('unknown state mode')
     config.env_settings = args.env_settings
-    config.mode = args.mode
+    config.mode = mode
 
     config.num_episodes_to_run = 15000
     config.file_to_save_data_results = 'result_cars'
@@ -61,13 +62,13 @@ def create_config(args):
                 "linear_hidden_units": [20, 20],
                 "final_layer_activation": None,
                 "batch_norm": False,
-                "buffer_size": 110000,
+                "buffer_size": 100000,
                 "tau": 0.005,
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
             },
             "save_frequency_episode": 500,
-            "min_steps_before_learning": 100000,
+            "min_steps_before_learning": 50000,
             "batch_size": 128,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
@@ -123,7 +124,6 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='test', help='name for experiment')
-    parser.add_argument('--mode', type=str, default='both', help='image only, vector only, or their combination')
     parser.add_argument('--env-settings', type=str, default='test', help='path to CarRacing env settings')
     parser.add_argument('--device', type=str, default='cpu', help='path to CarRacing env settings')
     parser.add_argument('--load', type=str, default='none', help='path to load model')
@@ -132,6 +132,4 @@ if __name__ == "__main__":
                         )
     args = parser.parse_args()
 
-    if args.mode not in ['image', 'vector', 'both']:
-        raise ValueError("mode should be one of 'image', 'vector', 'both'")
     main(args)

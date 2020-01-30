@@ -39,12 +39,17 @@ class Torch_Separated_Replay_Buffer(object):
 
         if state_picture is not None:
             assert isinstance(state_picture, np.ndarray), "state_picture must be None or np.ndarray"
+            assert isinstance(state_picture.dtype, np.uint8), "state_picture must have type np.uint8"
+
             assert isinstance(next_state_picture, np.ndarray), "state_picture must be None or np.ndarray"
-            state_picture = state_picture.astype(np.uint8)
-            next_state_picture = next_state_picture.astype(np.uint8)
+            assert isinstance(next_state_picture.dtype, np.uint8), "state_picture must have type np.uint8"
+
         if state_vector is not None:
             assert isinstance(state_vector, np.ndarray), "state_vector must me None or np.ndarray"
+            assert isinstance(state_vector.dtype, np.float32), "state_vector must have type np.float32"
+
             assert isinstance(next_state_vector, np.ndarray), "state_vector must me None or np.ndarray"
+            assert isinstance(next_state_vector.dtype, np.float32), "state_vector must have type np.float32"
 
         self.memory.append(self.experience(
             state_picture,
