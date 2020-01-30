@@ -7,7 +7,7 @@ def from_combined_state_to_image_vector(state: np.ndarray) -> Tuple[np.ndarray, 
     assert len(state.shape) == 3, "state must have 3 dimensions"
 
     state_picture, state_vector_extended = np.split(state, [3], axis=2)
-    state_vector = state_vector_extended[0, 0, :]
+    state_vector = state_vector_extended[:, 0, 0]
     del state_vector_extended
 
     return (state_picture * 256.0).astype(np.uint8), state_vector
