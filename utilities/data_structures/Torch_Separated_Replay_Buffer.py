@@ -86,9 +86,9 @@ class Torch_Separated_Replay_Buffer(object):
             torch.from_numpy(np.array([[e.done] for e in experiences], dtype=np.float32)).to(self.device),
         )
 
-        print(f"exp state_picture.shape: {experiences[0].state_picture.shape}")
-        print(f"exp state_vector.shape: {experiences[0].state_vector.shape}")
-        print('whole shape : ', batch[0][0].shape)
+        # print(f"exp state_picture.shape: {experiences[0].state_picture.shape}")
+        # print(f"exp state_vector.shape: {experiences[0].state_vector.shape}")
+        # print('whole shape : ', batch[0][0].shape)
 
         return batch
 
