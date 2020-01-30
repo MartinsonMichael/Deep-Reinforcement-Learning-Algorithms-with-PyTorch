@@ -12,9 +12,9 @@ def heuristic_state_classifier(state: np.ndarray) -> str:
     if len(state.shape) == 1:
         return 'vector'
 
-    if len(state.shape) == 2 or len(state.shape) == 4:
-        # hm, may be it is batch?
-        return heuristic_state_classifier(state[0])
+    # if len(state.shape) == 2 or len(state.shape) == 4:
+    #     # hm, may be it is batch?
+    #     return heuristic_state_classifier(state[0])
 
     raise ValueError(f'unknown state type : shape : {state.shape}')
 
@@ -37,7 +37,7 @@ def from_combined_state_to_image_vector(state: np.ndarray) -> Tuple[Union[np.nda
 def _state_splitter__both(state: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     assert len(state.shape) == 3, "state must have 3 dimensions"
 
-    state_picture, state_vector_extended = np.split(state, [3], axis=2)
+    state_picture, state_vector_extended = np.split(state, [3], axis=0)
     state_vector = state_vector_extended[:, 0, 0]
     del state_vector_extended
 
