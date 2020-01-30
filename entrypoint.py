@@ -4,7 +4,8 @@ import sys
 from os.path import dirname, abspath
 
 from envs.common_envs_utils.env_makers import make_CarRacing_fixed_vector_features, \
-    make_CarRacing_fixed_combined_features, make_CarRacing_fixed_image_features, get_state_type_from_settings_path
+    make_CarRacing_fixed_combined_features, make_CarRacing_fixed_image_features, get_state_type_from_settings_path, \
+    get_EnvCreator_by_settings
 
 sys.path.append(dirname(dirname(abspath(__file__))))
 
@@ -20,14 +21,8 @@ def create_config(args):
     config.environment = None
 
     mode = get_state_type_from_settings_path(args.env_settings)
-    if mode == 'both':
-        config.environment = make_CarRacing_fixed_combined_features(args.env_settings)()
-    elif mode == 'vector':
-        config.environment = make_CarRacing_fixed_vector_features(args.env_settings)()
-    elif mode == 'image':
-        config.environment = make_CarRacing_fixed_image_features(args.env_settings)()
-    else:
-        raise ValueError('unknown state mode')
+    env_creator = get_EnvCreator_by_settings(args.env_settings)
+    config.environment = env_creator(args.env_settings)()
     config.env_settings = args.env_settings
     config.mode = mode
 

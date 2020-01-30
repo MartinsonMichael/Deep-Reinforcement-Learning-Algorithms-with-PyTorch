@@ -4,6 +4,7 @@ import time
 
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.utils_continues import QNet, Policy
+from envs import get_EnvCreator_by_settings
 from envs.common_envs_utils.env_state_utils import from_combined_state_to_image_vector, \
     from_image_vector_to_combined_state
 from utilities.OU_Noise import OU_Noise
@@ -124,6 +125,8 @@ class SAC(Base_Agent):
         self.do_evaluation_iterations = self.hyperparameters["do_evaluation_iterations"]
         self._game_stats = {}
         self._last_episode_save_count = 0
+
+        self.environment = get_EnvCreator_by_settings(config.env_settings)(config.env_settings)()
 
     def save_result(self):
         """Saves the result of an episode of the game. Overriding the method in Base Agent that does this because we only

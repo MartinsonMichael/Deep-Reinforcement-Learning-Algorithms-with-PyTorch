@@ -24,6 +24,18 @@ def get_state_type_from_settings_path(settings_path: str) -> str:
     raise ValueError(f'unknown state type on path : {settings_path}')
 
 
+def get_EnvCreator_by_settings(settings_path: str):
+    expected_state_type = get_state_type_from_settings_path(settings_path)
+    if expected_state_type == 'both':
+        return make_CarRacing_fixed_combined_features
+    if expected_state_type == 'image':
+        return make_CarRacing_fixed_image_features
+    if expected_state_type == 'vector':
+        return make_CarRacing_fixed_vector_features
+
+    raise ValueError(f'unknown state type on path : {settings_path}')
+
+
 def make_CarRacing_fixed_for_rainbow(settings_path: str, name: Optional[str] = None):
     def f():
         env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)

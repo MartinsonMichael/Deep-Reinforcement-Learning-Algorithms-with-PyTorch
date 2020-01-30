@@ -72,7 +72,7 @@ class Torch_Separated_Replay_Buffer(object):
     def sample(self, num_experiences=None):
         """Draws a random sample of experience from the replay buffer"""
         experiences = self.pick_experiences(num_experiences)
-        return (
+        batch = (
             torch.from_numpy(np.array([
                 self._state_producer(e.state_picture, e.state_vector)
                 for e in experiences
@@ -85,6 +85,12 @@ class Torch_Separated_Replay_Buffer(object):
             ], dtype=np.float32)).to(self.device),
             torch.from_numpy(np.array([[e.done] for e in experiences], dtype=np.float32)).to(self.device),
         )
+
+        print(f"exp state_picture.shape: {experiences[0].state_picture.shape}")
+        print(f"exp state_vector.shape: {experiences[0].state_vector.shape}")
+        print('whole shape : ', batch[0][0].shape)
+
+        return batch
 
     def pick_experiences(self, num_experiences=None):
         if num_experiences is not None:
