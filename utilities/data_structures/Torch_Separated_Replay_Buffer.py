@@ -38,18 +38,26 @@ class Torch_Separated_Replay_Buffer(object):
         next_state_picture, next_state_vector = self._state_extractor(next_state)
 
         if state_picture is not None:
-            assert isinstance(state_picture, np.ndarray), "state_picture must be None or np.ndarray"
-            assert isinstance(state_picture.dtype, np.uint8), "state_picture must have type np.uint8"
+            assert isinstance(state_picture, np.ndarray), \
+                f"state_picture must be None or np.ndarray, and it has {type(state_picture)}"
+            assert state_picture.dtype == np.uint8, \
+                f"state_picture must have type np.uint8, and it has {state_picture.dtype}"
 
-            assert isinstance(next_state_picture, np.ndarray), "state_picture must be None or np.ndarray"
-            assert isinstance(next_state_picture.dtype, np.uint8), "state_picture must have type np.uint8"
+            assert isinstance(next_state_picture, np.ndarray), \
+                f"state_picture must be None or np.ndarray, and it has {type(next_state_picture)}"
+            assert next_state_picture.dtype == np.uint8, \
+                f"state_picture must have type np.uint8, and it has {next_state_picture.dtype}"
 
         if state_vector is not None:
-            assert isinstance(state_vector, np.ndarray), "state_vector must me None or np.ndarray"
-            assert isinstance(state_vector.dtype, np.float32), "state_vector must have type np.float32"
+            assert isinstance(state_vector, np.ndarray), \
+                f"state_vector must me None or np.ndarray, and it has {type(state_vector)}"
+            assert state_vector.dtype == np.float32, \
+                f"state_vector must have type np.float32, and it has {type(state_vector)}"
 
-            assert isinstance(next_state_vector, np.ndarray), "state_vector must me None or np.ndarray"
-            assert isinstance(next_state_vector.dtype, np.float32), "state_vector must have type np.float32"
+            assert isinstance(next_state_vector, np.ndarray), \
+                f"state_vector must me None or np.ndarray, and it has {type(next_state_vector)}"
+            assert next_state_vector.dtype == np.float32, \
+                f"state_vector must have type np.float32, and it has {next_state_vector.dtype}"
 
         self.memory.append(self.experience(
             state_picture,
