@@ -37,6 +37,7 @@ class SAC(Base_Agent):
                                                   "discrete actions "
         assert self.config.hyperparameters["Actor"]["final_layer_activation"] != "Softmax", "Final actor layer must " \
                                                                                             "not be softmax "
+        self.num_env = 20
         self.hyperparameters = config.hyperparameters
 
         self.folder_save_path = os.path.join('model_saves', self.name)
@@ -128,7 +129,7 @@ class SAC(Base_Agent):
 
         self.environment = SubprocVecEnv_tf2(env_fns=[
             get_EnvCreator_by_settings(config.env_settings)(config.env_settings)
-            for _ in range(20)
+            for _ in range(self.num_env)
         ])
 
     def save_result(self):
@@ -154,90 +155,6 @@ class SAC(Base_Agent):
         if self.add_extra_noise:
             self.noise.reset()
         self._game_stats = {}
-
-    # def run_n_episodes(
-    #         self,
-    #         num_episodes=None,
-    #         show_whether_achieved_goal=True,
-    #         save_and_print_results=True,
-    #         tf_saver=None,
-    #         visualize=True,
-    # ):
-    #     """Runs game to completion n times and then summarises results and saves model (if asked to)"""
-    #     if num_episodes is None:
-    #         num_episodes = self.config.num_episodes_to_run
-    #     start = time.time()
-    #     while self.episode_number < num_episodes:
-    #         self.reset_game()
-    #
-    #         need_visualize = visualize if self.episode_number % 5 == 0 else False
-    #
-    #         if 'mode_to_use' not in self.hyperparameters.keys():
-    #             self.step(visualize=need_visualize)
-    #         else:
-    #             if self.hyperparameters['mode_to_use'] == 'rlkit':
-    #                 self.rlkit_step(visualize=need_visualize)
-    #             else:
-    #                 self.step(visualize=need_visualize)
-    #
-    #
-    #         if save_and_print_results:
-    #             self.save_and_print_result()
-    #         if tf_saver is not None:
-    #             self.create_tf_charts(tf_saver)
-    #
-    #     time_taken = time.time() - start
-    #     if show_whether_achieved_goal:
-    #         self.show_whether_achieved_goal()
-    #     # if self.config.save_model:
-    #     #     self.locally_save_policy()
-    #     return self.game_full_episode_scores, self.rolling_results, time_taken
-
-    # def rlkit_step(self, visualize=False):
-    #     """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
-    #     eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
-    #     self.episode_step_number_val = 0
-    #     was_done = False
-    #     while not self.done:
-    #         if was_done:
-    #             self.reset_game()
-    #
-    #         self.episode_step_number_val += 1
-    #         self.action = self.pick_action(eval_ep)
-    #         self.conduct_action(self.action)
-    #
-    #         mask = self.done
-    #         if not eval_ep:
-    #             self.memory.add_experience(
-    #                 self.state, self.action, self.reward, self.next_state, mask
-    #             )
-    #         self.state = self.next_state
-    #         self.global_step_number += 1
-    #         print(f'global steps : {self.global_step_number}')
-    #
-    #         if self.episode_step_number_val >= self.hyperparameters['rlkit_mode_parameters']['explanation_steps_per_step']:
-    #             break
-    #
-    #         if self.episode_step_number_val > self.config.max_episode_steps + 10:
-    #             was_done = True
-    #
-    #     if self.global_step_number > self.hyperparameters["min_steps_before_learning"] and \
-    #             self.enough_experiences_to_learn_from():
-    #
-    #         for _ in range(self.hyperparameters['rlkit_mode_parameters']['update_steps_per_step']):
-    #             self.learn()
-    #
-    #     if eval_ep:
-    #         self.print_summary_of_latest_evaluation_episode()
-    #     self.episode_number += 1
-    #
-    #     if visualize and self.global_step_number > self.hyperparameters["min_steps_before_learning"]:
-    #         from envs.common_envs_utils import episode_visualizer
-    #         episode_visualizer(
-    #             env=self.environment,
-    #             action_picker=lambda state: self.actor_pick_action(state, eval=True),
-    #             name=self.config.name,
-    #         )
 
     def step(self, visualize=False):
         self._last_episode_save_count += 1
@@ -369,7 +286,7 @@ class SAC(Base_Agent):
         else:
             if len(self.memory) < self.hyperparameters["min_steps_before_learning"]:
                 if len(self.memory) < self.config.random_replay_prefill_ration * self.hyperparameters["min_steps_before_learning"]:
-                    action = np.random.uniform(-1, 1, self.environment.action_space.shape)
+                    action = np.random.uniform(-1, 1, (self.num_env, self.environment.action_space.shape[0]))
                 else:
                     action = self.actor_pick_action(state=state, eval=False)
                 print("Picking random action ", action)
@@ -392,7 +309,7 @@ class SAC(Base_Agent):
             with torch.no_grad():
                 _, z, action = self.produce_action_and_action_info(state)
         action = action.detach().cpu().numpy()
-        return action[0]
+        return action
 
     def produce_action_and_action_info(self, state):
         """Given the state, produces an action, the log probability of the action, and the tanh of the mean action"""
