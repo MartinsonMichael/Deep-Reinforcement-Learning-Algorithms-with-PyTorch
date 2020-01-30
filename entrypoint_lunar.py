@@ -34,7 +34,7 @@ def create_config(args):
     config.visualise_overall_agent_results = True
     config.standard_deviation_results = 1.0
     config.runs_per_agent = 1
-    config.use_GPU = False
+    config.device = args.device
     config.overwrite_existing_results_file = False
     config.randomise_random_seed = True
     config.save_model = True
@@ -109,5 +109,6 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='test', help='name for experiment')
+    parser.add_argument('--device', type=str, default='cpu', help='path to CarRacing env settings')
     args = parser.parse_args()
     main(args)
