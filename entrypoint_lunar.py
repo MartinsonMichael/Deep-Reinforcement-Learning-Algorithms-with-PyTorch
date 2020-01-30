@@ -95,7 +95,7 @@ def main(args):
     agent_config.hyperparameters = agent_config.hyperparameters['Actor_Critic_Agents']
     print("AGENT NAME: {}".format('SAC'))
 
-    agent = SAC(agent_config)
+    agent = SAC(agent_config, name=args.name)
 
     print(agent.hyperparameters)
 
