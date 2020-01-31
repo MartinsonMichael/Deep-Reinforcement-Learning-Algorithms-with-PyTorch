@@ -2,11 +2,12 @@ import json
 from typing import Optional
 
 import chainerrl
+import numpy as np
 
 from envs.common_envs_utils.env_wrappers import DiscreteWrapper
 from envs.common_envs_utils.extended_env_wrappers import ExtendedMaxAndSkipEnv, FrameCompressor, \
     ImageWithVectorCombiner, ChannelSwapper, OnlyImageTaker, OnlyVectorTaker, \
-    ImageToFloat
+    ImageToFloat, ImageStackWrapper
 from envs.gym_car_intersect_fixed import CarRacingHackatonContinuousFixed
 
 
@@ -63,13 +64,12 @@ def make_CarRacing_fixed_for_rainbow(settings_path: str, name: Optional[str] = N
 def make_CarRacing_fixed_combined_features(settings_path: str, name: Optional[str] = None):
     def f():
         env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
+        # env = FrameCompressor(env)
+        env = ImageStackWrapper(env, channel_order='hwc', neutral_action=np.array([0.0, 0.0, 0.0]))
         # -> dict[(.., .., 3), (16)]
         env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
-        # env = ExtendedMaxAndSkipEnv(env, skip=4)
-        env = FrameCompressor(env)
         env = ImageToFloat(env)
         # -> dict[(84, 84, 3), (16)]
-        # env = OriginalStateKeeper(env, 'uncombined_state')
         env = ImageWithVectorCombiner(env)
         # -> Box(84, 84, 19)
         env = ChannelSwapper(env)
