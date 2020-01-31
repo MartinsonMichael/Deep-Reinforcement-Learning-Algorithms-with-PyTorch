@@ -10,6 +10,7 @@ import torch
 
 class OriginalStateKeeper(gym.ObservationWrapper):
     """save state"""
+
     def __init__(self, env, state_save_name='original_state'):
         super().__init__(env)
         self._state_save_name = state_save_name
@@ -125,6 +126,100 @@ class ChannelSwapper(gym.ObservationWrapper):
         return ChannelSwapper._image_channel_transpose(observation)
 
 
+class SkipWrapper(gym.Wrapper):
+    def __init__(self, env=None, skip=4):
+        super(SkipWrapper, self).__init__(env)
+        self._skip = skip
+
+    def step(self, action):
+        total_reward = 0.0
+        done = None
+        info = None
+        obs = None
+        for _ in range(self._skip):
+            obs, reward, done, info = self.env.step(action)
+            total_reward += reward
+            if done:
+                break
+        del self._obs_buffer
+        return obs, total_reward, done, info
+
+    def reset(self):
+        obs = self.env.reset()
+        return obs
+
+
+class ImageStackWrapper(gym.Wrapper):
+    def __init__(self, env, neutral_action, frames_in_stack=4, image_dict_name='picture', channel_order='hwc'):
+        super(ImageStackWrapper, self).__init__(env)
+        self._stack_len = frames_in_stack
+        self._image_name = image_dict_name
+        # action to perform after reset to make frames_in_stack frames in stack
+        self._neutral_action = neutral_action
+        assert isinstance(self.observation_space, gym.spaces.Dict), "work only with obs as dict"
+        assert channel_order in ['hwc', 'chw'], "channel order mus be one of ['hwc', 'chw']"
+        self._channel_order = channel_order
+
+        if channel_order == 'hwc':
+            self.observation_space.spaces[self._image_name] = gym.spaces.Box(
+                low=self.observation_space.spaces[self._image_name].low[0, 0, 0],
+                high=self.observation_space.spaces[self._image_name].low[0, 0, 0],
+                shape=tuple([
+                    self.observation_space.spaces[self._image_name].shape[0],
+                    self.observation_space.spaces[self._image_name].shape[1],
+                    self.observation_space.spaces[self._image_name].shape[2] * frames_in_stack,
+                ])
+            )
+        else:
+            self.observation_space.spaces[self._image_name] = gym.spaces.Box(
+                low=self.observation_space.spaces[self._image_name].low[0, 0, 0],
+                high=self.observation_space.spaces[self._image_name].low[0, 0, 0],
+                shape=tuple([
+                    self.observation_space.spaces[self._image_name].shape[0] * frames_in_stack,
+                    self.observation_space.spaces[self._image_name].shape[1],
+                    self.observation_space.spaces[self._image_name].shape[2],
+                ])
+            )
+
+    def _get_concatenate_axis(self) -> int:
+        return 2 if self._channel_order == 'hwc' else 0
+
+    def _get_stack_buffer(self, action, step_num):
+        total_reward = 0.0
+        done = None
+        info = None
+        obs = None
+        buf = []
+        for index in range(step_num):
+            obs, reward, done, info = self.env.step(action)
+            total_reward += reward
+            buf.append(obs[self._image_name])
+            if done:
+                # make sure we have exactly stack_len frames
+                if index + 1 != self._stack_len:
+                    buf.extend([
+                        np.zeros_like(obs[self._image_name])
+                        for _ in range(self._stack_len - index - 1)
+                    ])
+                break
+        obs.update({self._image_name: np.concatenate(buf, axis=self._get_concatenate_axis())})
+        return obs, total_reward, done, info
+
+    def step(self, action):
+        return self._get_stack_buffer(action, self._stack_len)
+
+    def reset(self):
+        initial_obs = self.env.reset()
+        obs, total_reward, done, info = self._get_stack_buffer(self._neutral_action, self._stack_len - 1)
+        obs.update({self._image_name:
+            np.concatenate([
+                initial_obs[self._image_name],
+                obs[self._image_name]
+            ], axis=self._get_concatenate_axis())
+        })
+        return obs
+
+
 class ExtendedMaxAndSkipEnv(gym.Wrapper):
     def __init__(self, env=None, skip=4, image_dict_name='picture'):
         """Return only every `skip`-th frame"""
@@ -147,6 +242,7 @@ class ExtendedMaxAndSkipEnv(gym.Wrapper):
             if done:
                 break
         max_frame = np.max(np.stack(self._obs_buffer), axis=0)
+        del self._obs_buffer
         obs.update({self._image_dict_name: max_frame})
         return obs, total_reward, done, info
 
@@ -154,6 +250,8 @@ class ExtendedMaxAndSkipEnv(gym.Wrapper):
         """Clear past frame buffer and init. to first obs. from inner env."""
         self._obs_buffer.clear()
         obs = self.env.reset()
+        del self._obs_buffer
+        self._obs_buffer = []
         self._obs_buffer.append(obs)
         return obs
 

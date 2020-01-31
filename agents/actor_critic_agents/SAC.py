@@ -4,7 +4,7 @@ import time
 
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.utils_continues import QNet, Policy
-from envs.common_envs_utils.env_state_utils import from_combined_state_to_image_vector, \
+from envs.common_envs_utils.env_state_utils import get_state_combiner_by_settings_file, \
     from_image_vector_to_combined_state
 from utilities.OU_Noise import OU_Noise
 from torch.optim import Adam
@@ -84,26 +84,9 @@ class SAC(Base_Agent):
             self.hyperparameters["batch_size"],
             self.config.seed,
             device=self.device,
-            state_extractor=from_combined_state_to_image_vector,
+            state_extractor=get_state_combiner_by_settings_file(self.config.env_settings),
             state_producer=from_image_vector_to_combined_state,
         )
-
-        # if config.mode != 'both':
-        #     self.memory = Torch_Replay_Buffer(
-        #         self.hyperparameters["Critic"]["buffer_size"],
-        #         self.hyperparameters["batch_size"],
-        #         self.config.seed,
-        #         device=self.device,
-        #     )
-        # else:
-        #     self.memory = Torch_Separated_Replay_Buffer(
-        #         self.hyperparameters["Critic"]["buffer_size"],
-        #         self.hyperparameters["batch_size"],
-        #         self.config.seed,
-        #         device=self.device,
-        #         state_extractor=from_combined_state_to_image_vector,
-        #         state_producer=from_image_vector_to_combined_state,
-        #     )
 
         self.actor_local = Policy(
             state_description=self.config.environment.observation_space,

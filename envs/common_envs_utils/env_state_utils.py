@@ -1,37 +1,23 @@
 from typing import Tuple, Union
-
 import numpy as np
 
-
-def heuristic_state_classifier(state: np.ndarray) -> str:
-    if len(state.shape) == 3:
-        if state.shape[0] == 3 or state.shape[2] == 3:
-            return 'image'
-        else:
-            return 'both'
-    if len(state.shape) == 1:
-        return 'vector'
-
-    # if len(state.shape) == 2 or len(state.shape) == 4:
-    #     # hm, may be it is batch?
-    #     return heuristic_state_classifier(state[0])
-
-    raise ValueError(f'unknown state type : shape : {state.shape}')
+from envs import get_state_type_from_settings_path
 
 
-def from_combined_state_to_image_vector(state: np.ndarray) -> Tuple[Union[np.ndarray, None], Union[np.ndarray, None]]:
+def get_state_combiner_by_settings_file(settings_file_path: str):
     """
+    return function that
     Transform single state np.ndarray to
     0 - image np.ndarray with dtype np.uint8 and
     1 - vector np.ndarray with type np.float32
     """
-    state_type = heuristic_state_classifier(state)
+    state_type = get_state_type_from_settings_path(settings_file_path)
     if state_type == 'both':
-        return _state_splitter__both(state)
+        return lambda state: _state_splitter__both(state)
     if state_type == 'vector':
-        return None, state
+        return lambda state: (None, state)
     if state_type == 'image':
-        return _prepare_image_to_buffer(state), None
+        return lambda state: (_prepare_image_to_buffer(state), None)
 
 
 def _state_splitter__both(state: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

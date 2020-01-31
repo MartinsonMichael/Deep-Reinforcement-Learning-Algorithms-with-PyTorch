@@ -65,7 +65,7 @@ def make_CarRacing_fixed_combined_features(settings_path: str, name: Optional[st
         env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
         # -> dict[(.., .., 3), (16)]
         env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
-        env = ExtendedMaxAndSkipEnv(env, skip=4)
+        # env = ExtendedMaxAndSkipEnv(env, skip=4)
         env = FrameCompressor(env)
         env = ImageToFloat(env)
         # -> dict[(84, 84, 3), (16)]
@@ -89,7 +89,7 @@ def make_CarRacing_fixed_image_features(settings_path: str, name: Optional[str] 
         env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
         # -> dict[(.., .., 3), (16)]
         env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
-        env = ExtendedMaxAndSkipEnv(env, skip=4)
+        # env = ExtendedMaxAndSkipEnv(env, skip=4)
         env = FrameCompressor(env)
         env = ImageToFloat(env)
         # -> dict[(84, 84, 3), (16)]
