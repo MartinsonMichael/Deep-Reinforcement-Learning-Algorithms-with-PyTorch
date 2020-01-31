@@ -133,6 +133,7 @@ class SAC(Base_Agent):
         self.do_evaluation_iterations = self.hyperparameters["do_evaluation_iterations"]
         self._game_stats = {}
         self._last_episode_save_count = 0
+        self._current_run_global_steps = 0
 
     def save_result(self):
         """Saves the result of an episode of the game. Overriding the method in Base Agent that does this because we only
@@ -180,6 +181,7 @@ class SAC(Base_Agent):
                 )
             self.state = self.next_state
             self.global_step_number += 1
+            self._current_run_global_steps += 1
             print(f'global steps : {self.global_step_number}')
 
             if self.episode_step_number_val > self.config.max_episode_steps + 10:
@@ -190,7 +192,7 @@ class SAC(Base_Agent):
             self.print_summary_of_latest_evaluation_episode()
         self.episode_number += 1
 
-        if visualize and len(self.memory) > self.hyperparameters["min_steps_before_learning"]:
+        if visualize and self._current_run_global_steps > self.hyperparameters["min_steps_before_learning"]:
             from envs.common_envs_utils import episode_visualizer
             episode_visualizer(
                 env=self.environment,
@@ -261,7 +263,7 @@ class SAC(Base_Agent):
         self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()[0]
 
     def create_tf_charts(self, tf_writer):
-        if len(self.memory) < self.hyperparameters['min_steps_before_learning']:
+        if self._current_run_global_steps < self.hyperparameters['min_steps_before_learning']:
             return
         with tf_writer.as_default():
             tf.summary.scalar(
@@ -286,8 +288,8 @@ class SAC(Base_Agent):
         if eval_ep:
             action = self.actor_pick_action(state=state, eval=True)
         else:
-            if len(self.memory) < self.hyperparameters["min_steps_before_learning"]:
-                if len(self.memory) < self.config.random_replay_prefill_ration * self.hyperparameters["min_steps_before_learning"]:
+            if self._current_run_global_steps < self.hyperparameters["min_steps_before_learning"]:
+                if self._current_run_global_steps < self.config.random_replay_prefill_ration * self.hyperparameters["min_steps_before_learning"]:
                     action = np.random.uniform(-1, 1, self.environment.action_space.shape)
                 else:
                     action = self.actor_pick_action(state=state, eval=False)
@@ -330,9 +332,9 @@ class SAC(Base_Agent):
         """Returns boolean indicating whether there are enough experiences to learn from and it is time to learn for the
         actor and critic"""
         return (
-                len(self.memory) > self.hyperparameters["min_steps_before_learning"] and
+                self._current_run_global_steps > self.hyperparameters["min_steps_before_learning"] and
                 self.enough_experiences_to_learn_from() and
-                len(self.memory) % self.hyperparameters["update_every_n_steps"] == 0
+                self._current_run_global_steps % self.hyperparameters["update_every_n_steps"] == 0
         )
 
     def learn(self):
