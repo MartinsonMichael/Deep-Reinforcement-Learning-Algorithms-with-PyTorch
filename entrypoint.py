@@ -113,7 +113,7 @@ def main(args):
 
     print("RANDOM SEED ", agent_config.seed)
 
-    game_scores, rolling_scores, time_taken = agent.run_n_episodes(tf_saver=tf_writer, visualize=True)
+    game_scores, rolling_scores, time_taken = agent.run_n_episodes(tf_saver=tf_writer, visualize=False)
     print("Time taken: {}".format(time_taken), flush=True)
 
 

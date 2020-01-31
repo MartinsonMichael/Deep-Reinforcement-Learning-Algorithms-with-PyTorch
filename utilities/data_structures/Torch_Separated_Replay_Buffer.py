@@ -73,11 +73,15 @@ class Torch_Separated_Replay_Buffer(object):
         # from sys import getsizeof
         # print(f'buffer len is {len(self.memory)} and it take {asizeof.asizeof(self.memory) / 1024 / 1024} MB')
         # print(f'buffer len is {len(self.memory)} and it take {len(self.memory) * asizeof.asizeof(self.memory[0]) / 1024**2} MB')
-
-        # byte_per_exp = state_picture.nbytes + state_vector.nbytes + action.nbytes + getsizeof(reward) + next_state_picture.nbytes + next_state_vector.nbytes + getsizeof(done)
+        #
+        # if state_vector is not None:
+        #     byte_per_exp = state_picture.nbytes + state_vector.nbytes + action.nbytes + getsizeof(reward) + next_state_picture.nbytes + next_state_vector.nbytes + getsizeof(done)
+        # else:
+        #     byte_per_exp = state_picture.nbytes + action.nbytes + getsizeof(
+        #         reward) + next_state_picture.nbytes + getsizeof(done)
         # print(f'bytes per exp : {byte_per_exp}')
         # print(f'getsizeof(self.memory) : {getsizeof(self.memory)}')
-        # TOPEST way :)
+        # # TOPEST way :)
         # print(f'buffer len is {len(self.memory)} and it take {(getsizeof(self.memory) + len(self.memory) * byte_per_exp) / 1024 ** 2} MB')
 
     def sample(self, num_experiences=None):
