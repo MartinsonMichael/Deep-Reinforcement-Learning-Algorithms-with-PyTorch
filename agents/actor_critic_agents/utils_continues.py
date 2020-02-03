@@ -9,9 +9,9 @@ from torch.distributions import Normal
 
 
 def get_activated_ratio(x: Union[torch.Tensor, torch.FloatTensor]) -> float:
-    if torch.prod(torch.tensor(x.size())).numpy() == 0:
+    if torch.prod(torch.tensor(x.size())).cpu().numpy() == 0:
         return 0.0
-    return (x.detach() > 0).numpy().sum() / torch.prod(torch.tensor(x.size())).numpy()
+    return (x.detach() > 0).cpu().numpy().sum() / torch.prod(torch.tensor(x.size())).cpu().numpy()
 
 
 class PictureProcessor(nn.Module):

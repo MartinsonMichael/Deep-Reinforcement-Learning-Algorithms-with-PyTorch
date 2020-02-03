@@ -206,7 +206,7 @@ class SAC(Base_Agent):
             ret = {}
             for key, value in x.items():
                 if isinstance(value, dict):
-                    ret.update(stats_extractor(value, key))
+                    ret.update(stats_extractor(value, prefix=prefix + '_' + key))
                 else:
                     ret[prefix + '_' + key] = value
             return ret
@@ -215,6 +215,7 @@ class SAC(Base_Agent):
             local_step_number += 1
             print('\n***')
             print(f'step : {local_step_number}')
+            full_stats = {}
 
             action_train, log_prob, action_eval, actor_step_stats = self.produce_action_and_action_info(state, return_stats=True)
             action_train = action_train.detach().cpu().numpy()
@@ -223,20 +224,26 @@ class SAC(Base_Agent):
             total_reward += reward
             print(f'reward : {reward}')
             print(f'action train: {action_train}\t  Radius : {round(float((action_train ** 2).sum()), 2)}')
+            full_stats['action_train_radius'] = (action_train ** 2).sum()
             print(f'action eval : {action_eval}\t  Radius : {round(float((action_eval ** 2).sum()), 2)}')
+            full_stats['action_eval_radius'] = (action_eval ** 2).sum()
             print('env info:')
             print(info)
             print()
 
-            q1_value, critic1_step_stats = self.critic_local(state, torch.from_numpy(action_train), return_stats=True)
-            q2_value, critic2_step_stats = self.critic_local_2(state, torch.from_numpy(action_train), return_stats=True)
-            print(f'Q local value 1 : {q1_value}')
-            print(f'Q local value 2 : {q2_value}')
+            q1_value, critic1_step_stats = self.critic_local(state, torch.from_numpy(action_train).to(self.device), return_stats=True)
+            q2_value, critic2_step_stats = self.critic_local_2(state, torch.from_numpy(action_train).to(self.device), return_stats=True)
+            print(f'Q local value 1 : {q1_value.detach().cpu().numpy()[0]}')
+            full_stats['q_local_value_1'] = q1_value.detach().cpu().numpy()[0]
+            print(f'Q local value 2 : {q2_value.detach().cpu().numpy()[0]}')
+            full_stats['q_local_value_2'] = q2_value.detach().cpu().numpy()[0]
 
-            q1_target_value, critic_target1_step_stats = self.critic_target(state, torch.from_numpy(action_train), return_stats=True)
-            q2_target_value, critic_target2_step_stats = self.critic_target_2(state, torch.from_numpy(action_train), return_stats=True)
-            print(f'Q target value 1 : {q1_target_value}')
-            print(f'Q target value 2 : {q2_target_value}')
+            q1_target_value, critic_target1_step_stats = self.critic_target(state, torch.from_numpy(action_train).to(self.device), return_stats=True)
+            q2_target_value, critic_target2_step_stats = self.critic_target_2(state, torch.from_numpy(action_train).to(self.device), return_stats=True)
+            print(f'Q target value 1 : {q1_target_value.detach().cpu().numpy()[0]}')
+            full_stats['q_target_value_1'] = q1_target_value.detach().cpu().numpy()[0]
+            print(f'Q target value 2 : {q2_target_value.detach().cpu().numpy()[0]}')
+            full_stats['q_target_value_2'] = q2_target_value.detach().cpu().numpy()[0]
 
             print('\nActor stats:')
             print(actor_step_stats)
@@ -244,10 +251,9 @@ class SAC(Base_Agent):
             print('\nCritic stats:')
             print(critic1_step_stats)
 
-            full_stats = stats_extractor({
-                'actor': actor_step_stats,
-                'critic': critic1_step_stats,
-            })
+            full_stats['actor'] = actor_step_stats
+            full_stats['critic'] = critic1_step_stats
+            full_stats = stats_extractor({"": full_stats})
 
             for key, value in full_stats.items():
                 if key not in mean_stats.keys():
@@ -262,7 +268,18 @@ class SAC(Base_Agent):
                 break
 
         with self.tf_writer.as_default():
+            tf.summary.scalar(
+                name='huge eval reward',
+                data=total_reward,
+                step=self.global_step_number,
+            )
+            tf.summary.scalar(
+                name='huge eval steps cnt',
+                data=local_step_number,
+                step=self.global_step_number,
+            )
             for name, value in mean_stats.items():
+                print(name)
                 tf.summary.scalar(
                     name='MEAN' + ' ' + name,
                     data=np.array(value).mean(),
