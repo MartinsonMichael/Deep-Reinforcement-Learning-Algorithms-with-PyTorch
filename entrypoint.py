@@ -58,7 +58,7 @@ def create_config(args):
                 "linear_hidden_units": [20, 20],
                 "final_layer_activation": None,
                 "batch_norm": False,
-                "buffer_size": 75000,
+                "buffer_size": 250000,
                 "tau": 0.005,
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
@@ -105,7 +105,7 @@ def main(args):
     agent_config.hyperparameters = agent_config.hyperparameters['Actor_Critic_Agents']
     print("AGENT NAME: {}".format('SAC'))
 
-    agent = SAC(agent_config, name=args.name)
+    agent = SAC(agent_config, name=args.name, tf_writer=tf_writer)
 
     if args.load != 'none':
         agent.load(args.load)
@@ -120,7 +120,7 @@ def main(args):
 
         return
 
-    game_scores, rolling_scores, time_taken = agent.run_n_episodes(tf_saver=tf_writer, visualize=False)
+    game_scores, rolling_scores, time_taken = agent.run_n_episodes(visualize=False)
     print("Time taken: {}".format(time_taken), flush=True)
 
 

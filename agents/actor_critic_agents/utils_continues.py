@@ -11,7 +11,7 @@ from torch.distributions import Normal
 def get_activated_ratio(x: Union[torch.Tensor, torch.FloatTensor]) -> float:
     if torch.prod(torch.tensor(x.size())).numpy() == 0:
         return 0.0
-    return (x > 0).numpy().sum() / torch.prod(torch.tensor(x.size())).numpy()
+    return (x.detach() > 0).numpy().sum() / torch.prod(torch.tensor(x.size())).numpy()
 
 
 class PictureProcessor(nn.Module):
@@ -141,7 +141,7 @@ class NewStateLayer(nn.Module):
         return self._picture_layer(state, return_stats)
 
     def forward_vector(self, state: torch.FloatTensor, return_stats: bool = False):
-        return self._vector_layer(state)
+        return F.relu(self._vector_layer(state))
 
     def _make_it_torch_tensor(self, x):
         if isinstance(x, (torch.FloatTensor, torch.Tensor, torch.cuda.FloatTensor)):
@@ -214,7 +214,7 @@ class QNet(nn.Module):
 
     def forward(self, state, action, return_stats: bool = False):
         if not return_stats:
-            s = F.relu(self._state_layer(state))
+            s = self._state_layer(state)
             a = F.relu(self._dense_a(action))
             x = torch.cat((s, a), 1)
             x = F.relu(self._dense2(x))
@@ -222,7 +222,7 @@ class QNet(nn.Module):
             return x
         else:
             stats = {}
-            s, state_stats = F.relu(self._state_layer(state, True))
+            s, state_stats = self._state_layer(state, True)
             stats['state_proc'] = state_stats
             a = F.relu(self._dense_a(action))
             stats['action_proc'] = {
@@ -255,17 +255,17 @@ class Policy(nn.Module):
 
     def forward(self, state, return_stats: bool = False):
         if not return_stats:
-            x = F.relu(self._state_layer(state))
+            x = self._state_layer(state)
             x = F.relu(self._dense2(x))
             x = self._head(x)
             return x
         else:
             stats = {}
-            x, state_stats = F.relu(self._state_layer(state, return_stats))
+            x, state_stats = self._state_layer(state, True)
             stats['state_proc'] = state_stats
             x = F.relu(self._dense2(x))
             stats['dense2'] = {
                 'was activated': get_activated_ratio(x)
             }
             x = self._head(x)
-            return x
+            return x, stats

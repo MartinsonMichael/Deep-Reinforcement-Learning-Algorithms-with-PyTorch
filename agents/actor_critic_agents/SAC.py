@@ -1,6 +1,7 @@
 import os
 import pickle
 import time
+from typing import Dict, Union, Any
 
 from agents.Base_Agent import Base_Agent
 from agents.actor_critic_agents.utils_continues import QNet, Policy
@@ -29,9 +30,10 @@ class SAC(Base_Agent):
       to maximise the entropy of their actions as well as their cumulative reward"""
     agent_name = "SAC"
 
-    def __init__(self, config, name):
+    def __init__(self, config, name, tf_writer=None):
         Base_Agent.__init__(self, config)
         self.name = name
+        self.tf_writer = tf_writer
         assert self.action_types == "CONTINUOUS", "Action types must be continuous. Use SAC Discrete instead for " \
                                                   "discrete actions "
         assert self.config.hyperparameters["Actor"]["final_layer_activation"] != "Softmax", "Final actor layer must " \
@@ -144,7 +146,7 @@ class SAC(Base_Agent):
 
     def step(self, visualize=False):
         self._last_episode_save_count += 1
-        if self._last_episode_save_count % 100 == 99:
+        if self._last_episode_save_count % 100 == 5:
             self.step_with_huge_stats()
 
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
@@ -172,6 +174,8 @@ class SAC(Base_Agent):
 
             if self.episode_step_number_val > self.config.max_episode_steps + 10:
                 break
+            if self.tf_writer is not None:
+                self.create_tf_charts()
 
         print(self.total_episode_score_so_far)
         if eval_ep:
@@ -196,6 +200,17 @@ class SAC(Base_Agent):
         total_reward = 0.0
         local_step_number = 0
         print('Huge Eval Start')
+        mean_stats = {}
+
+        def stats_extractor(x: Dict[str, Union[float, Any]], prefix='') -> Dict[str, float]:
+            ret = {}
+            for key, value in x.items():
+                if isinstance(value, dict):
+                    ret.update(stats_extractor(value, key))
+                else:
+                    ret[prefix + '_' + key] = value
+            return ret
+
         while not done:
             local_step_number += 1
             print('\n***')
@@ -204,22 +219,22 @@ class SAC(Base_Agent):
             action_train, log_prob, action_eval, actor_step_stats = self.produce_action_and_action_info(state, return_stats=True)
             action_train = action_train.detach().cpu().numpy()
             action_eval = action_eval.detach().cpu().numpy()
-            state, reward, done, info = self.environment.step(action_train)
+            state, reward, done, info = self.environment.step(action_train[0])
             total_reward += reward
             print(f'reward : {reward}')
-            print(f'action train: {action_train}\t  Radius : {(action_train ** 2).sum()}')
-            print(f'action eval : {action_eval}\t  Radius : {(action_eval ** 2).sum()}')
+            print(f'action train: {action_train}\t  Radius : {round(float((action_train ** 2).sum()), 2)}')
+            print(f'action eval : {action_eval}\t  Radius : {round(float((action_eval ** 2).sum()), 2)}')
             print('env info:')
             print(info)
             print()
 
-            q1_value, critic1_step_stats = self.critic_local(state, action_train, return_stats=True)
-            q2_value, critic2_step_stats = self.critic_local_2(state, action_train, return_stats=True)
+            q1_value, critic1_step_stats = self.critic_local(state, torch.from_numpy(action_train), return_stats=True)
+            q2_value, critic2_step_stats = self.critic_local_2(state, torch.from_numpy(action_train), return_stats=True)
             print(f'Q local value 1 : {q1_value}')
             print(f'Q local value 2 : {q2_value}')
 
-            q1_target_value, critic_target1_step_stats = self.critic_target(state, action_train, return_stats=True)
-            q2_target_value, critic_target2_step_stats = self.critic_target_2(state, action_train, return_stats=True)
+            q1_target_value, critic_target1_step_stats = self.critic_target(state, torch.from_numpy(action_train), return_stats=True)
+            q2_target_value, critic_target2_step_stats = self.critic_target_2(state, torch.from_numpy(action_train), return_stats=True)
             print(f'Q target value 1 : {q1_target_value}')
             print(f'Q target value 2 : {q2_target_value}')
 
@@ -229,8 +244,46 @@ class SAC(Base_Agent):
             print('\nCritic stats:')
             print(critic1_step_stats)
 
-            if self.episode_step_number_val > self.config.max_episode_steps + 10:
+            full_stats = stats_extractor({
+                'actor': actor_step_stats,
+                'critic': critic1_step_stats,
+            })
+
+            for key, value in full_stats.items():
+                if key not in mean_stats.keys():
+                    mean_stats[key] = []
+                mean_stats[key].append(value)
+
+            if 'was_reset' in info.keys():
+                print('Was Reset')
                 break
+
+            if local_step_number > self.config.max_episode_steps + 10:
+                break
+
+        with self.tf_writer.as_default():
+            for name, value in mean_stats.items():
+                tf.summary.scalar(
+                    name='MEAN' + ' ' + name,
+                    data=np.array(value).mean(),
+                    step=self.global_step_number,
+                )
+                tf.summary.scalar(
+                    name='MAX' + ' ' + name,
+                    data=np.array(value).max(),
+                    step=self.global_step_number,
+                )
+                tf.summary.scalar(
+                    name='MIN' + ' ' + name,
+                    data=np.array(value).min(),
+                    step=self.global_step_number,
+                )
+                tf.summary.scalar(
+                    name='MEDIAN' + ' ' + name,
+                    data=np.median(np.array(value)),
+                    step=self.global_step_number,
+                )
+
 
         print(f'Total reward : {total_reward}')
         print('Huge Eval End.')
@@ -293,10 +346,10 @@ class SAC(Base_Agent):
 
         self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()[0]
 
-    def create_tf_charts(self, tf_writer):
+    def create_tf_charts(self):
         if self._current_run_global_steps < self.hyperparameters['min_steps_before_learning']:
             return
-        with tf_writer.as_default():
+        with self.tf_writer.as_default():
             tf.summary.scalar(
                 name='rolling score',
                 data=np.array(self.game_full_episode_scores[-7:]).mean(),
@@ -364,8 +417,8 @@ class SAC(Base_Agent):
 
         if return_stats:
             actor_stats['action'] = {
-                'mean': mean.cpu().numpy(),
-                'std': std.cpu().numpy(),
+                'mean': mean.detach().cpu().numpy(),
+                'std': std.detach().cpu().numpy(),
             }
             return action, log_prob, torch.tanh(mean), actor_stats
         else:

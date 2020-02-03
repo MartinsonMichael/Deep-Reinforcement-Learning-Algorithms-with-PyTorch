@@ -196,7 +196,6 @@ class Base_Agent(object):
             num_episodes=None,
             show_whether_achieved_goal=True,
             save_and_print_results=True,
-            tf_saver=None,
             visualize=True,
     ):
         """Runs game to completion n times and then summarises results and saves model (if asked to)"""
@@ -209,8 +208,6 @@ class Base_Agent(object):
             self.step(visualize if self.episode_number % 5 == 0 else False)
             if save_and_print_results:
                 self.save_and_print_result()
-            if tf_saver is not None:
-                self.create_tf_charts(tf_saver)
 
         time_taken = time.time() - start
         if show_whether_achieved_goal:
@@ -256,11 +253,6 @@ class Base_Agent(object):
         sys.stdout.write(text.format(len(self.game_full_episode_scores), self.rolling_results[-1], self.max_rolling_score_seen,
                                      self.game_full_episode_scores[-1], self.max_episode_score_seen))
         sys.stdout.flush()
-
-    def create_tf_charts(self, tf_writer):
-        with tf_writer.as_default():
-            tf.summary.scalar(name='rolling score', data=self.rolling_results[-1], step=self.episode_number)
-            tf.summary.scalar(name='score', data=self.game_full_episode_scores[-1], step=self.episode_number)
 
     def show_whether_achieved_goal(self):
         """Prints out whether the agent achieved the environment target goal"""
