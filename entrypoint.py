@@ -58,7 +58,7 @@ def create_config(args):
                 "linear_hidden_units": [20, 20],
                 "final_layer_activation": None,
                 "batch_norm": False,
-                "buffer_size": 250000,
+                "buffer_size": 150000,
                 "tau": 0.005,
                 "gradient_clipping_norm": 5,
                 "initialiser": "Xavier"
@@ -66,7 +66,7 @@ def create_config(args):
 
             "save_frequency_episode": 500,
             "min_steps_before_learning": 50000,
-            "batch_size": 128,
+            "batch_size": 64,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
             "theta": 0.15,  # for O-H noise
