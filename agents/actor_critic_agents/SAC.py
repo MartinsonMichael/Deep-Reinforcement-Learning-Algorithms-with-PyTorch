@@ -144,6 +144,9 @@ class SAC(Base_Agent):
 
     def step(self, visualize=False):
         self._last_episode_save_count += 1
+        if self._last_episode_save_count % 100 == 99:
+            self.step_with_huge_stats()
+
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
         eval_ep = self.episode_number % TRAINING_EPISODES_PER_EVAL_EPISODE == 0 and self.do_evaluation_iterations
         self.episode_step_number_val = 0
@@ -186,6 +189,51 @@ class SAC(Base_Agent):
         if self._last_episode_save_count >= self.hyperparameters['save_frequency_episode']:
             self._last_episode_save_count = 0
             self.save()
+
+    def step_with_huge_stats(self):
+        done = False
+        state = self.environment.reset()
+        total_reward = 0.0
+        local_step_number = 0
+        print('Huge Eval Start')
+        while not done:
+            local_step_number += 1
+            print('\n***')
+            print(f'step : {local_step_number}')
+
+            action_train, log_prob, action_eval, actor_step_stats = self.produce_action_and_action_info(state, return_stats=True)
+            action_train = action_train.detach().cpu().numpy()
+            action_eval = action_eval.detach().cpu().numpy()
+            state, reward, done, info = self.environment.step(action_train)
+            total_reward += reward
+            print(f'reward : {reward}')
+            print(f'action train: {action_train}\t  Radius : {(action_train ** 2).sum()}')
+            print(f'action eval : {action_eval}\t  Radius : {(action_eval ** 2).sum()}')
+            print('env info:')
+            print(info)
+            print()
+
+            q1_value, critic1_step_stats = self.critic_local(state, action_train, return_stats=True)
+            q2_value, critic2_step_stats = self.critic_local_2(state, action_train, return_stats=True)
+            print(f'Q local value 1 : {q1_value}')
+            print(f'Q local value 2 : {q2_value}')
+
+            q1_target_value, critic_target1_step_stats = self.critic_target(state, action_train, return_stats=True)
+            q2_target_value, critic_target2_step_stats = self.critic_target_2(state, action_train, return_stats=True)
+            print(f'Q target value 1 : {q1_target_value}')
+            print(f'Q target value 2 : {q2_target_value}')
+
+            print('\nActor stats:')
+            print(actor_step_stats)
+
+            print('\nCritic stats:')
+            print(critic1_step_stats)
+
+            if self.episode_step_number_val > self.config.max_episode_steps + 10:
+                break
+
+        print(f'Total reward : {total_reward}')
+        print('Huge Eval End.')
 
     def save(self):
         current_save_path = os.path.join(
@@ -298,9 +346,13 @@ class SAC(Base_Agent):
         action = action.detach().cpu().numpy()
         return action[0]
 
-    def produce_action_and_action_info(self, state):
+    def produce_action_and_action_info(self, state, return_stats: bool = False):
         """Given the state, produces an action, the log probability of the action, and the tanh of the mean action"""
-        actor_output = self.actor_local(state)
+        if return_stats:
+            actor_output, actor_stats = self.actor_local(state, return_stats)
+        else:
+            actor_output = self.actor_local(state)
+
         mean, log_std = actor_output[:, :self.action_size], actor_output[:, self.action_size:]
         std = log_std.exp()
         normal = Normal(mean, std)
@@ -309,7 +361,15 @@ class SAC(Base_Agent):
         log_prob = normal.log_prob(x_t)
         log_prob -= torch.log(1 - action.pow(2) + EPSILON)
         log_prob = log_prob.sum(1, keepdim=True)
-        return action, log_prob, torch.tanh(mean)
+
+        if return_stats:
+            actor_stats['action'] = {
+                'mean': mean.cpu().numpy(),
+                'std': std.cpu().numpy(),
+            }
+            return action, log_prob, torch.tanh(mean), actor_stats
+        else:
+            return action, log_prob, torch.tanh(mean)
 
     def time_for_critic_and_actor_to_learn(self):
         """Returns boolean indicating whether there are enough experiences to learn from and it is time to learn for the
@@ -415,8 +475,16 @@ class SAC(Base_Agent):
         self.soft_update_of_target_network(self.critic_local_2, self.critic_target_2,
                                            self.hyperparameters["Critic"]["tau"])
         if alpha_loss is not None:
-            self.take_optimisation_step(self.alpha_optim, None, alpha_loss, None)
-            self.alpha = self.log_alpha.exp()
+            if self.config.high_temperature:
+                if self.global_step_number < 500:
+                    self.alpha = torch.from_numpy(1)
+                elif self.global_step_number < 10000:
+                    self.alpha = torch.from_numpy(1 - self.global_step_number / 11000)
+                else:
+                    self.alpha = torch.from_numpy(0.05)
+            else:
+                self.take_optimisation_step(self.alpha_optim, None, alpha_loss, None)
+                self.alpha = self.log_alpha.exp()
 
     def print_summary_of_latest_evaluation_episode(self):
         """Prints a summary of the latest episode"""

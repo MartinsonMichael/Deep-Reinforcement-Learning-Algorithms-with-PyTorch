@@ -8,6 +8,12 @@ from gym import spaces
 from torch.distributions import Normal
 
 
+def get_activated_ratio(x: Union[torch.Tensor, torch.FloatTensor]) -> float:
+    if torch.prod(torch.tensor(x.size())).numpy() == 0:
+        return 0.0
+    return (x > 0).numpy().sum() / torch.prod(torch.tensor(x.size())).numpy()
+
+
 class PictureProcessor(nn.Module):
     def __init__(self, in_channels=3, device='cpu'):
         super(PictureProcessor, self).__init__()
@@ -40,11 +46,27 @@ class PictureProcessor(nn.Module):
         torch.nn.init.xavier_uniform_(self._conv3.weight)
         torch.nn.init.constant_(self._conv3.bias, 0)
 
-    def forward(self, state):
-        x = F.relu(self._conv1(state))
-        x = F.relu(self._conv2(x))
-        x = F.relu(self._conv3(x))
-        return x.view(x.size(0), -1)
+    def forward(self, state, return_stats: bool = False):
+        if not return_stats:
+            x = F.relu(self._conv1(state))
+            x = F.relu(self._conv2(x))
+            x = F.relu(self._conv3(x))
+            return x.view(x.size(0), -1)
+        else:
+            stats = {}
+            x = F.relu(self._conv1(state))
+            stats['conv1'] = {
+                'was activated': get_activated_ratio(x),
+            }
+            x = F.relu(self._conv2(x))
+            stats['conv2'] = {
+                'was activated': get_activated_ratio(x),
+            }
+            x = F.relu(self._conv3(x))
+            stats['conv3'] = {
+                'was activated': get_activated_ratio(x),
+            }
+            return x.view(x.size(0), -1), stats
 
     def get_out_shape_for_in(self, input_shape):
         return self.forward(torch.from_numpy(np.zeros(
@@ -95,30 +117,30 @@ class NewStateLayer(nn.Module):
     def get_out_shape_for_in(self):
         return self._state_layer_out_size
 
-    def forward_dict(self, state: Dict[str, torch.FloatTensor]):
-        state_pic = None
-        if self._picture_layer is not None:
-            state_pic = self._picture_layer(state['picture'])
+    # def forward_dict(self, state: Dict[str, torch.FloatTensor]):
+    #     state_pic = None
+    #     if self._picture_layer is not None:
+    #         state_pic = self._picture_layer(state['picture'])
+    #
+    #     state_vec = None
+    #     if self._vector_layer is not None:
+    #         state_vec = self._vector_layer(state['vector'])
+    #
+    #     if state_vec is not None and state_pic is not None:
+    #         return torch.cat((state_pic, state_vec), dim=1)
+    #
+    #     if state_pic is not None:
+    #         return state_pic
+    #
+    #     if state_vec is not None:
+    #         return state_vec
+    #
+    #     raise ValueError("state should be Dict['picture' : tensor or None, 'vector' : tensor or None]")
 
-        state_vec = None
-        if self._vector_layer is not None:
-            state_vec = self._vector_layer(state['vector'])
+    def forward_picture(self, state: torch.FloatTensor, return_stats: bool = False):
+        return self._picture_layer(state, return_stats)
 
-        if state_vec is not None and state_pic is not None:
-            return torch.cat((state_pic, state_vec), dim=1)
-
-        if state_pic is not None:
-            return state_pic
-
-        if state_vec is not None:
-            return state_vec
-
-        raise ValueError("state should be Dict['picture' : tensor or None, 'vector' : tensor or None]")
-
-    def forward_picture(self, state: torch.FloatTensor):
-        return self._picture_layer(state)
-
-    def forward_vector(self, state: torch.FloatTensor):
+    def forward_vector(self, state: torch.FloatTensor, return_stats: bool = False):
         return self._vector_layer(state)
 
     def _make_it_torch_tensor(self, x):
@@ -144,17 +166,21 @@ class NewStateLayer(nn.Module):
         #         for key, value in x.items()
         #     }
 
-    def forward(self, state: Union[Dict[str, torch.FloatTensor], torch.FloatTensor]):
+    def forward(
+            self,
+            state: Union[Dict[str, torch.FloatTensor], torch.FloatTensor],
+            return_stats: bool = False,
+    ):
         state = self._make_it_torch_tensor(state)
 
-        if isinstance(state, dict):
-            return self.forward_dict(state)
+        # if isinstance(state, dict):
+        #     return self.forward_dict(state)
 
         if isinstance(state, (torch.FloatTensor, torch.Tensor)):
             if len(state.shape) == 4:
-                return self.forward_picture(state)
+                return self.forward_picture(state, return_stats)
             if len(state.shape) == 2:
-                return self.forward_vector(state)
+                return self.forward_vector(state, return_stats)
 
         print('state')
         print(f'state type : {type(state)}')
@@ -186,13 +212,29 @@ class QNet(nn.Module):
         torch.nn.init.xavier_uniform_(self._head1.weight)
         torch.nn.init.constant_(self._head1.bias, 0)
 
-    def forward(self, state, action):
-        s = F.relu(self._state_layer(state))
-        a = F.relu(self._dense_a(action))
-        x = torch.cat((s, a), 1)
-        x = F.relu(self._dense2(x))
-        x = self._head1(x)
-        return x
+    def forward(self, state, action, return_stats: bool = False):
+        if not return_stats:
+            s = F.relu(self._state_layer(state))
+            a = F.relu(self._dense_a(action))
+            x = torch.cat((s, a), 1)
+            x = F.relu(self._dense2(x))
+            x = self._head1(x)
+            return x
+        else:
+            stats = {}
+            s, state_stats = F.relu(self._state_layer(state, True))
+            stats['state_proc'] = state_stats
+            a = F.relu(self._dense_a(action))
+            stats['action_proc'] = {
+                'was activated': get_activated_ratio(a),
+            }
+            x = torch.cat((s, a), 1)
+            x = F.relu(self._dense2(x))
+            stats['dense2'] = {
+                'was activated': get_activated_ratio(x),
+            }
+            x = self._head1(x)
+            return x, stats
 
 
 class Policy(nn.Module):
@@ -211,8 +253,19 @@ class Policy(nn.Module):
         torch.nn.init.xavier_uniform_(self._head.weight)
         torch.nn.init.constant_(self._head.bias, 0)
 
-    def forward(self, state):
-        x = F.relu(self._state_layer(state))
-        x = F.relu(self._dense2(x))
-        x = self._head(x)
-        return x
+    def forward(self, state, return_stats: bool = False):
+        if not return_stats:
+            x = F.relu(self._state_layer(state))
+            x = F.relu(self._dense2(x))
+            x = self._head(x)
+            return x
+        else:
+            stats = {}
+            x, state_stats = F.relu(self._state_layer(state, return_stats))
+            stats['state_proc'] = state_stats
+            x = F.relu(self._dense2(x))
+            stats['dense2'] = {
+                'was activated': get_activated_ratio(x)
+            }
+            x = self._head(x)
+            return x

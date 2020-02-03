@@ -36,7 +36,7 @@ def from_image_vector_to_combined_state(image: Union[np.ndarray, None], vector: 
                 _prepare_image_to_model(image),
                 np.transpose(np.tile(vector, (image.shape[1], image.shape[2], 1)), (2, 1, 0)),
             ],
-            axis=0
+            axis=0,
         )
     if image is not None:
         return _prepare_image_to_model(image)

@@ -65,9 +65,10 @@ def make_CarRacing_fixed_combined_features(settings_path: str, name: Optional[st
     def f():
         env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
         # env = FrameCompressor(env)
-        env = ImageStackWrapper(env, channel_order='hwc', neutral_action=np.array([0.0, 0.0, 0.0]))
+        # env = ImageStackWrapper(env, channel_order='hwc', neutral_action=np.array([0.0, 0.0, 0.0]))
         # -> dict[(.., .., 3), (16)]
         env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
+        env = FrameCompressor(env)
         env = ImageToFloat(env)
         # -> dict[(84, 84, 3), (16)]
         env = ImageWithVectorCombiner(env)
