@@ -206,9 +206,9 @@ class SAC(Base_Agent):
             ret = {}
             for key, value in x.items():
                 if isinstance(value, dict):
-                    ret.update(stats_extractor(value, prefix=prefix + '_' + key))
+                    ret.update(stats_extractor(value, prefix=prefix + ' -> ' + key))
                 else:
-                    ret[prefix + '_' + key] = value
+                    ret[prefix + ' -> ' + key] = value
             return ret
 
         while not done:
@@ -253,7 +253,7 @@ class SAC(Base_Agent):
 
             full_stats['actor'] = actor_step_stats
             full_stats['critic'] = critic1_step_stats
-            full_stats = stats_extractor({"": full_stats})
+            full_stats = stats_extractor(full_stats)
 
             for key, value in full_stats.items():
                 if key not in mean_stats.keys():
@@ -271,34 +271,34 @@ class SAC(Base_Agent):
             tf.summary.scalar(
                 name='huge eval reward',
                 data=total_reward,
-                step=self.global_step_number,
+                step=self.episode_number,
             )
             tf.summary.scalar(
                 name='huge eval steps cnt',
                 data=local_step_number,
-                step=self.global_step_number,
+                step=self.episode_number,
             )
             for name, value in mean_stats.items():
                 print(name)
                 tf.summary.scalar(
                     name='MEAN' + ' ' + name,
                     data=np.array(value).mean(),
-                    step=self.global_step_number,
+                    step=self.episode_number,
                 )
                 tf.summary.scalar(
                     name='MAX' + ' ' + name,
                     data=np.array(value).max(),
-                    step=self.global_step_number,
+                    step=self.episode_number,
                 )
                 tf.summary.scalar(
                     name='MIN' + ' ' + name,
                     data=np.array(value).min(),
-                    step=self.global_step_number,
+                    step=self.episode_number,
                 )
                 tf.summary.scalar(
                     name='MEDIAN' + ' ' + name,
                     data=np.median(np.array(value)),
-                    step=self.global_step_number,
+                    step=self.episode_number,
                 )
 
 

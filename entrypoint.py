@@ -60,7 +60,7 @@ def create_config(args):
                 "batch_norm": False,
                 "buffer_size": 125000,
                 "tau": 0.005,
-                "gradient_clipping_norm": 5,
+                "gradient_clipping_norm": 0.05,
                 "initialiser": "Xavier"
             },
 
