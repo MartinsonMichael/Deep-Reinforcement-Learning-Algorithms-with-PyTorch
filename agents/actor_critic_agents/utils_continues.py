@@ -48,21 +48,21 @@ class PictureProcessor(nn.Module):
 
     def forward(self, state, return_stats: bool = False):
         if not return_stats:
-            x = F.relu(self._conv1(state))
-            x = F.relu(self._conv2(x))
-            x = F.relu(self._conv3(x))
+            x = F.leaky_relu(self._conv1(state))
+            x = F.leaky_relu(self._conv2(x))
+            x = F.leaky_relu(self._conv3(x))
             return x.view(x.size(0), -1)
         else:
             stats = {}
-            x = F.relu(self._conv1(state))
+            x = F.leaky_relu(self._conv1(state))
             stats['conv1'] = {
                 'was activated': get_activated_ratio(x),
             }
-            x = F.relu(self._conv2(x))
+            x = F.leaky_relu(self._conv2(x))
             stats['conv2'] = {
                 'was activated': get_activated_ratio(x),
             }
-            x = F.relu(self._conv3(x))
+            x = F.leaky_relu(self._conv3(x))
             stats['conv3'] = {
                 'was activated': get_activated_ratio(x),
             }
@@ -141,7 +141,7 @@ class NewStateLayer(nn.Module):
         return self._picture_layer(state, return_stats)
 
     def forward_vector(self, state: torch.FloatTensor, return_stats: bool = False):
-        return F.relu(self._vector_layer(state))
+        return F.leaky_relu(self._vector_layer(state))
 
     def _make_it_torch_tensor(self, x):
         if isinstance(x, (torch.FloatTensor, torch.Tensor, torch.cuda.FloatTensor)):
@@ -215,21 +215,21 @@ class QNet(nn.Module):
     def forward(self, state, action, return_stats: bool = False):
         if not return_stats:
             s = self._state_layer(state)
-            a = F.relu(self._dense_a(action))
+            a = F.leaky_relu(self._dense_a(action))
             x = torch.cat((s, a), 1)
-            x = F.relu(self._dense2(x))
+            x = F.leaky_relu(self._dense2(x))
             x = self._head1(x)
             return x
         else:
             stats = {}
             s, state_stats = self._state_layer(state, True)
             stats['state_proc'] = state_stats
-            a = F.relu(self._dense_a(action))
+            a = F.leaky_relu(self._dense_a(action))
             stats['action_proc'] = {
                 'was activated': get_activated_ratio(a),
             }
             x = torch.cat((s, a), 1)
-            x = F.relu(self._dense2(x))
+            x = F.leaky_relu(self._dense2(x))
             stats['dense2'] = {
                 'was activated': get_activated_ratio(x),
             }
@@ -256,14 +256,14 @@ class Policy(nn.Module):
     def forward(self, state, return_stats: bool = False):
         if not return_stats:
             x = self._state_layer(state)
-            x = F.relu(self._dense2(x))
+            x = F.leaky_relu(self._dense2(x))
             x = self._head(x)
             return x
         else:
             stats = {}
             x, state_stats = self._state_layer(state, True)
             stats['state_proc'] = state_stats
-            x = F.relu(self._dense2(x))
+            x = F.leaky_relu(self._dense2(x))
             stats['dense2'] = {
                 'was activated': get_activated_ratio(x)
             }
