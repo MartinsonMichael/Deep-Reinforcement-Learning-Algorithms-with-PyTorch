@@ -65,7 +65,7 @@ def create_config(args):
             },
 
             "save_frequency_episode": 500,
-            "min_steps_before_learning": 500,
+            "min_steps_before_learning": 50000,
             "batch_size": 64,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
@@ -120,7 +120,7 @@ def main(args):
 
         return
 
-    game_scores, rolling_scores, time_taken = agent.run_n_episodes(visualize=False)
+    game_scores, rolling_scores, time_taken = agent.run_n_episodes(visualize=True)
     print("Time taken: {}".format(time_taken), flush=True)
 
 
