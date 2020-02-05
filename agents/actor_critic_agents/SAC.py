@@ -559,8 +559,9 @@ class SAC(Base_Agent):
                 else:
                     self.alpha = torch.from_numpy(np.array([0.05])).to(self.device)
             else:
-                self.take_optimisation_step(self.alpha_optim, None, alpha_loss, None)
+                self.take_optimisation_step(self.alpha_optim, None, alpha_loss, clipping_norm=0.1)
                 self.alpha = self.log_alpha.exp()
+        torch.clamp(self.alpha, 0.0, 4.0)
 
     def print_summary_of_latest_evaluation_episode(self):
         """Prints a summary of the latest episode"""

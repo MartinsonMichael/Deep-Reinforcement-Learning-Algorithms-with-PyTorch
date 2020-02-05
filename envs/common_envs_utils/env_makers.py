@@ -66,7 +66,7 @@ def make_CarRacing_fixed_image_features(settings_path: str, name: Optional[str] 
         env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
         # -> dict[(~106, ~106, 3), (~5-11)]
         env = FrameCompressor(env)
-        env = ImageStackWrapper(env, neutral_action=np.array([0.0, 0.0, 0.0]), frames_in_stack=4)
+        # env = ImageStackWrapper(env, neutral_action=np.array([0.0, 0.0, 0.0]), frames_in_stack=4)
         env = ImageToFloat(env)
         env = OnlyImageTaker(env)
         env = ChannelSwapper(env)
