@@ -174,8 +174,11 @@ class SAC(Base_Agent):
 
             if self.episode_step_number_val > self.config.max_episode_steps + 10:
                 break
-            if self.tf_writer is not None:
-                self.create_tf_charts()
+            if self.info.get('need_reset', False) or self.info.get('was_reset', False):
+                break
+
+        if self.tf_writer is not None:
+            self.create_tf_charts()
 
         print(self.total_episode_score_so_far)
         if eval_ep:
@@ -264,6 +267,8 @@ class SAC(Base_Agent):
                 print('Was Reset')
                 break
 
+            if info.get('need_reset', False) or info.get('was_reset', False):
+                break
             if local_step_number > self.config.max_episode_steps + 10:
                 break
 
@@ -548,9 +553,9 @@ class SAC(Base_Agent):
         if alpha_loss is not None:
             if self.config.high_temperature:
                 if self.global_step_number < 500:
-                    self.alpha = torch.from_numpy(np.array([1])).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([1.0])).to(self.device)
                 elif self.global_step_number < 10000:
-                    self.alpha = torch.from_numpy(np.array([1 - self.global_step_number / 11000])).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([1.0 - self.global_step_number / 11000.0])).to(self.device)
                 else:
                     self.alpha = torch.from_numpy(np.array([0.05])).to(self.device)
             else:

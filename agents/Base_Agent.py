@@ -221,8 +221,8 @@ class Base_Agent(object):
 
     def conduct_action(self, action):
         """Conducts an action in the environment"""
-        self.next_state, self.reward, self.done, info = self.environment.step(action)
-        self.update_stats_due_to_step_info(info, self.reward, self.done)
+        self.next_state, self.reward, self.done, self.info = self.environment.step(action)
+        self.update_stats_due_to_step_info(self.info, self.reward, self.done)
         self.total_episode_score_so_far += self.reward
         if self.hyperparameters["clip_rewards"]:
             self.reward = max(min(self.reward, 1.0), -1.0)
@@ -293,7 +293,8 @@ class Base_Agent(object):
                 new_lr = starting_lr
             for g in optimizer.param_groups:
                 g['lr'] = new_lr
-        if random.random() < 0.001: self.logger.info("Learning rate {}".format(new_lr))
+        if random.random() < 0.001:
+            self.logger.info("Learning rate {}".format(new_lr))
 
     def enough_experiences_to_learn_from(self):
         """Boolean indicated whether there are enough experiences in the memory buffer to learn from"""
