@@ -50,7 +50,7 @@ def create_config(args):
                 "final_layer_activation": None,
                 "batch_norm": False,
                 "tau": 0.005,
-                "gradient_clipping_norm": 0.05,
+                "gradient_clipping_norm": 0.005,
                 "initialiser": "Xavier"
             },
             "Critic": {
@@ -60,12 +60,12 @@ def create_config(args):
                 "batch_norm": False,
                 "buffer_size": 125000,
                 "tau": 0.005,
-                "gradient_clipping_norm": 0.05,
+                "gradient_clipping_norm": 0.01,
                 "initialiser": "Xavier"
             },
 
             "save_frequency_episode": 500,
-            "min_steps_before_learning": 50000,
+            "min_steps_before_learning": 500,
             "batch_size": 64,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise

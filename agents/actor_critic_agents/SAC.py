@@ -146,7 +146,7 @@ class SAC(Base_Agent):
 
     def step(self, visualize=False):
         self._last_episode_save_count += 1
-        if self._last_episode_save_count % 100 == 5:
+        if self._last_episode_save_count % 5 == 1:
             self.step_with_huge_stats()
 
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
@@ -361,7 +361,7 @@ class SAC(Base_Agent):
         if 'track_progress' in info.keys():
             self._game_stats['track_progress'] = info['track_progress']
 
-        self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()[0]
+        # self._game_stats['temperature'] = self.alpha.cpu().detach().numpy()[0]
 
     def create_tf_charts(self):
         if self._current_run_global_steps < self.hyperparameters['min_steps_before_learning']:
@@ -525,6 +525,7 @@ class SAC(Base_Agent):
             ('q2 loss', critic_loss_2),
             ('policy loss', actor_loss),
             ('temperature loss', alpha_loss),
+            ('temperature', self.alpha[0]),
         ]:
             if loss_name not in self._game_stats.keys():
                 self._game_stats[loss_name] = 0.0
@@ -547,11 +548,11 @@ class SAC(Base_Agent):
         if alpha_loss is not None:
             if self.config.high_temperature:
                 if self.global_step_number < 500:
-                    self.alpha = torch.from_numpy(np.array(1)).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([1])).to(self.device)
                 elif self.global_step_number < 10000:
-                    self.alpha = torch.from_numpy(np.array(1 - self.global_step_number / 11000)).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([1 - self.global_step_number / 11000])).to(self.device)
                 else:
-                    self.alpha = torch.from_numpy(np.array(0.05)).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([0.05])).to(self.device)
             else:
                 self.take_optimisation_step(self.alpha_optim, None, alpha_loss, None)
                 self.alpha = self.log_alpha.exp()
