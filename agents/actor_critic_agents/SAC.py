@@ -570,7 +570,7 @@ class SAC(Base_Agent):
                 #     retain_graph=False,
                 # )
                 self.alpha = self.log_alpha.exp()
-        torch.clamp(self.alpha, 0.0, 4.0)
+        self.alpha = torch.clamp(self.alpha, 0.0, 4.0)
 
     def print_summary_of_latest_evaluation_episode(self):
         """Prints a summary of the latest episode"""
