@@ -540,8 +540,7 @@ class SAC(Base_Agent):
             self.critic_optimizer,
             self.critic_local,
             critic_loss_1,
-            0.05,
-            # self.hyperparameters["Critic"]["gradient_clipping_norm"]
+            self.hyperparameters["Critic"]["gradient_clipping_norm"]
         )
         self.take_optimisation_step(self.critic_optimizer_2, self.critic_local_2, critic_loss_2,
                                     self.hyperparameters["Critic"]["gradient_clipping_norm"])
@@ -554,13 +553,22 @@ class SAC(Base_Agent):
         if alpha_loss is not None:
             if self.config.high_temperature:
                 if self.global_step_number < 500:
-                    self.alpha = torch.from_numpy(np.array([1.0])).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([1.0], dtype=np.float32)).to(self.device)
                 elif self.global_step_number < 10000:
-                    self.alpha = torch.from_numpy(np.array([1.0 - self.global_step_number / 11000.0])).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([
+                        1.0 - self.global_step_number / 11000.0
+                    ], dtype=np.float32)).to(self.device)
                 else:
-                    self.alpha = torch.from_numpy(np.array([0.05])).to(self.device)
+                    self.alpha = torch.from_numpy(np.array([0.05], dtype=np.float32)).to(self.device)
             else:
-                self.take_optimisation_step(self.alpha_optim, None, alpha_loss, clipping_norm=0.1)
+                self.take_optimisation_step(self.alpha_optim, None, alpha_loss, None)
+                # self.take_optimisation_step(
+                #     optimizer=self.alpha_optim,
+                #     network=None,
+                #     loss=alpha_loss,
+                #     clipping_norm=0.1,
+                #     retain_graph=False,
+                # )
                 self.alpha = self.log_alpha.exp()
         torch.clamp(self.alpha, 0.0, 4.0)
 
