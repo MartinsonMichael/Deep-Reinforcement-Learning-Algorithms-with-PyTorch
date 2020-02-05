@@ -547,11 +547,11 @@ class SAC(Base_Agent):
         if alpha_loss is not None:
             if self.config.high_temperature:
                 if self.global_step_number < 500:
-                    self.alpha = torch.from_numpy(1)
+                    self.alpha = torch.from_numpy(np.array(1)).to(self.device)
                 elif self.global_step_number < 10000:
-                    self.alpha = torch.from_numpy(1 - self.global_step_number / 11000)
+                    self.alpha = torch.from_numpy(np.array(1 - self.global_step_number / 11000)).to(self.device)
                 else:
-                    self.alpha = torch.from_numpy(0.05)
+                    self.alpha = torch.from_numpy(np.array(0.05)).to(self.device)
             else:
                 self.take_optimisation_step(self.alpha_optim, None, alpha_loss, None)
                 self.alpha = self.log_alpha.exp()

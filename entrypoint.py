@@ -50,7 +50,7 @@ def create_config(args):
                 "final_layer_activation": None,
                 "batch_norm": False,
                 "tau": 0.005,
-                "gradient_clipping_norm": 5,
+                "gradient_clipping_norm": 0.05,
                 "initialiser": "Xavier"
             },
             "Critic": {
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument('--env-settings', type=str, default='test', help='path to CarRacing env settings')
     parser.add_argument('--device', type=str, default='cpu', help='path to CarRacing env settings')
     parser.add_argument('--load', type=str, default='none', help='path to load model')
-    parser.add_argument('--high-temperature', type=bool, default=False, help='use high temperature keeping')
+    parser.add_argument('--high-temperature', action='store_true', help='use high temperature keeping')
     parser.add_argument('--eval', action='store_true', help='only evaluate model (useful with --load flag)')
     parser.add_argument(
         '--start-buffer-random-ratio', type=float, default=1.0,
