@@ -165,7 +165,10 @@ class Base_Agent(object):
 
     def reset_game(self):
         """Resets the game informatenvsion so we are ready to play a new episode"""
-        self.environment.seed(int(np.random.random_integers(1, 2**31)))
+
+        self.environment.seed(
+            (int(time.time() * 10**5) % 10**5) * 10**5 + int(time.time() * 10**5) % 10**5
+        )
         self.state = self.environment.reset()
         self.next_state = None
         self.action = None
