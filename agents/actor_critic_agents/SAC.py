@@ -540,7 +540,8 @@ class SAC(Base_Agent):
             self.critic_optimizer,
             self.critic_local,
             critic_loss_1,
-            self.hyperparameters["Critic"]["gradient_clipping_norm"]
+            0.05,
+            # self.hyperparameters["Critic"]["gradient_clipping_norm"]
         )
         self.take_optimisation_step(self.critic_optimizer_2, self.critic_local_2, critic_loss_2,
                                     self.hyperparameters["Critic"]["gradient_clipping_norm"])
