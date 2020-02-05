@@ -65,7 +65,7 @@ def create_config(args):
             },
 
             "save_frequency_episode": 500,
-            "min_steps_before_learning": 50000,
+            "min_steps_before_learning": 500,
             "batch_size": 64,
             "discount_rate": 0.99,
             "mu": 0.0,  # for O-H noise
