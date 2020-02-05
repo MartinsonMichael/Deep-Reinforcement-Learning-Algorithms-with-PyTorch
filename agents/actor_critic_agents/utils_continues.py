@@ -48,21 +48,24 @@ class PictureProcessor(nn.Module):
 
     def forward(self, state, return_stats: bool = False):
         if not return_stats:
-            x = F.leaky_relu(self._conv1(state))
-            x = F.leaky_relu(self._conv2(x))
-            x = F.leaky_relu(self._conv3(x))
+            # x = F.leaky_relu(self._conv1(state))
+            # x = F.leaky_relu(self._conv2(x))
+            # x = F.leaky_relu(self._conv3(x))
+            x = self._conv1(state)
+            x = self._conv2(x)
+            x = self._conv3(x)
             return x.view(x.size(0), -1)
         else:
             stats = {}
-            x = F.leaky_relu(self._conv1(state))
+            x = self._conv1(state)
             stats['conv1'] = {
                 'was activated': get_activated_ratio(x),
             }
-            x = F.leaky_relu(self._conv2(x))
+            x = self._conv2(x)
             stats['conv2'] = {
                 'was activated': get_activated_ratio(x),
             }
-            x = F.leaky_relu(self._conv3(x))
+            x = self._conv3(x)
             stats['conv3'] = {
                 'was activated': get_activated_ratio(x),
             }
