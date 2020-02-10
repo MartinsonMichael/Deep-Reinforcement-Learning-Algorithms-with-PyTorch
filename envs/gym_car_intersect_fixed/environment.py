@@ -323,7 +323,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
             if polygon_name in params_to_use:
                 for point in polygon_points:
                     env_vector.extend(point / self._data_loader.playfield_size)
-        self._static_env_state_cache = np.array(env_vector)
+        self._static_env_state_cache = np.array(env_vector, dtype=np.float32)
         return self._static_env_state_cache.copy()
 
     def get_true_picture(self):

@@ -52,7 +52,7 @@ class Torch_Separated_Replay_Buffer(object):
             assert isinstance(state_vector, np.ndarray), \
                 f"state_vector must me None or np.ndarray, and it has {type(state_vector)}"
             assert state_vector.dtype == np.float32, \
-                f"state_vector must have type np.float32, and it has {type(state_vector)}"
+                f"state_vector must have type np.float32, and it has {state_vector.dtype}"
 
             assert isinstance(next_state_vector, np.ndarray), \
                 f"state_vector must me None or np.ndarray, and it has {type(next_state_vector)}"
