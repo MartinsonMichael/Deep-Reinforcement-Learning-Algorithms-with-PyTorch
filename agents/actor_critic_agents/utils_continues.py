@@ -144,7 +144,10 @@ class NewStateLayer(nn.Module):
         return self._picture_layer(state, return_stats)
 
     def forward_vector(self, state: torch.FloatTensor, return_stats: bool = False):
-        return F.leaky_relu(self._vector_layer(state))
+        if return_stats:
+            return self._vector_layer(state), {}
+        else:
+            return self._vector_layer(state)
 
     def _make_it_torch_tensor(self, x):
         if isinstance(x, (torch.FloatTensor, torch.Tensor, torch.cuda.FloatTensor)):
