@@ -148,7 +148,10 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
                 bot_car.destroy()
                 del bot_car
 
-    def reset(self, force=False, visualize_next_episode=False):
+    def visualize_next_episode(self):
+        self._need_draw_picture = True
+
+    def reset(self, force=False):
         """
         recreate agent car and bots cars_full
         :return: initial state
@@ -157,7 +160,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self.time = 0
         self.create_agent_car()
         self.rewarder = Rewarder(self._settings)
-        self._need_draw_picture = visualize_next_episode or self._settings['state_config']['picture']
+        self._need_draw_picture = self._settings['state_config']['picture']
 
         self.bot_cars = []
         for bot_index in range(self.num_bots):
@@ -173,7 +176,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
             world=self.world,
             car_image=self._data_loader.peek_car_image(is_for_agent=True),
             track=DataSupporter.do_with_points(
-                self._data_loader.peek_track(is_for_agent=True, expand_points=200, index=self._preseted_agent_track),
+                self._data_loader.peek_track(is_for_agent=True, expand_points=50, index=self._preseted_agent_track),
                 self._data_loader.convertIMG2PLAY,
             ),
             data_loader=self._data_loader,
@@ -316,8 +319,6 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
             for point in self.car.track['line']:
                 env_vector.extend(point / self._data_loader.playfield_size)
 
-        print("self.car.track['polygon'].exterior.coords.xy")
-        print(list(self.car.track['polygon'].exterior.coords.xy[0]))
         if 'track_polygon' in params_to_use:
             for point in zip(*list(map(list, self.car.track['polygon'].exterior.coords.xy))):
                 env_vector.extend(np.array(point) / self._data_loader.playfield_size)

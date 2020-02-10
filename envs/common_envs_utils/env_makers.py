@@ -92,11 +92,11 @@ def make_CarRacing_fixed_vector_features(settings_path: str, name: Optional[str]
     def f():
         env = CarRacingHackatonContinuousFixed(settings_file_path=settings_path)
         # -> dict[(.., .., 3), (16)]
-        env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=250)
+        env = chainerrl.wrappers.ContinuingTimeLimit(env, max_episode_steps=450)
         # -> dict[(84, 84, 3), (16)]
         env = OnlyVectorsTaker(env)
         # -> Box(16)
-        env._max_episode_steps = 250
+        env._max_episode_steps = 450
 
         if discrete_wrapper is not None:
             env = discrete_wrapper(env)

@@ -45,18 +45,17 @@ class DiscreteWrapper(ActionWrapper):
 
     def __init__(self, env):
         super().__init__(env)
-        self.action_space.n = 5
-        self.action_space = gym.spaces.discrete.Discrete(self.action_space.n)
+        self.action_space = gym.spaces.discrete.Discrete(5)
 
     def action(self, action):
         if action == 0:
-            return [0, 0, 0]
+            return [0.0, 0.0, 0.0]
         if action == 1:
-            return [-0.6, 0.01, 0]
+            return [-0.6, 0.01, 0.0]
         if action == 2:
-            return [+0.6, 0.01, 0]
+            return [+0.6, 0.01, 0.0]
         if action == 3:
-            return [0.0, 0.2, 0]
+            return [0.0, 0.2, 0.0]
         if action == 4:
             return [0.0, 0.0, 1.0]
         raise KeyError
