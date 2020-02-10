@@ -16,8 +16,9 @@
     "angle_steer_multiplication": 5.0
   },
   "state_config": {
-    "picture": true,
-    "vector_car_features": []
+    "picture": false,
+    "vector_car_features": ["hull_position", "hull_angle", "car_speed"],
+    "vector_env_features": ["track_line", "track_polygon"]
   },
   "reward": {
     "is_collided": 0.0,

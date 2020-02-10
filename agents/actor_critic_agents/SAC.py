@@ -146,7 +146,7 @@ class SAC(Base_Agent):
 
     def step(self, visualize=False):
         self._last_episode_save_count += 1
-        if self._last_episode_save_count % 5 == 1:
+        if self._last_episode_save_count % 15 == 1:
             self.step_with_huge_stats()
 
         """Runs an episode on the game, saving the experience and running a learning step if appropriate"""
