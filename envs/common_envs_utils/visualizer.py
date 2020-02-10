@@ -17,7 +17,7 @@ def episode_visualizer(env, action_picker, name='test', folder='save_animation_f
     elif image_processor == 'swap_channels':
         image_processor = lambda x: np.transpose(np.array(x), (2, 1, 0))
 
-    state = env.reset()
+    state = env.reset(visualize_next_episode=True)
     im_array = [np.array(env.get_true_picture()).astype(np.uint8)]
     total_reward = 0.0
     step_num = 0

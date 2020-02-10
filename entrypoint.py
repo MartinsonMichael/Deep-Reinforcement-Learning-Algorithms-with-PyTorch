@@ -120,7 +120,7 @@ def main(args):
 
         return
 
-    game_scores, rolling_scores, time_taken = agent.run_n_episodes(visualize=True)
+    game_scores, rolling_scores, time_taken = agent.run_n_episodes(visualize=False)
     print("Time taken: {}".format(time_taken), flush=True)
 
 

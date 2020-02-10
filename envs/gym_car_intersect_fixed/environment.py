@@ -90,6 +90,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
                 dtype=np.float32,
             ),
         )
+        self._need_draw_picture = self._settings['state_config']['picture']
         self.reset()
 
     def set_render_mode(self, mode):
@@ -147,7 +148,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
                 bot_car.destroy()
                 del bot_car
 
-    def reset(self, force=False):
+    def reset(self, force=False, visualize_next_episode=False):
         """
         recreate agent car and bots cars_full
         :return: initial state
@@ -156,6 +157,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self.time = 0
         self.create_agent_car()
         self.rewarder = Rewarder(self._settings)
+        self._need_draw_picture = visualize_next_episode or self._settings['state_config']['picture']
 
         self.bot_cars = []
         for bot_index in range(self.num_bots):
@@ -257,10 +259,13 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         if len(self.bot_cars) < self.num_bots:
             self.create_bot_car()
 
-        try:
-            self.picture_state = self.render(self._preseted_render_mode)
-        except:
-            return self.reset(force=True)
+        if not self._need_draw_picture:
+            try:
+                self.picture_state = self.render(self._preseted_render_mode)
+            except:
+                return self.reset(force=True)
+        else:
+            self.picture_state = None
 
         done = self.rewarder.get_step_done(self.car.stats)
         step_reward = self.rewarder.get_step_reward(self.car.stats)
@@ -273,13 +278,13 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         return {
             'picture':
                 self.picture_state.astype(np.uint8)
-                if self._settings['state_config']['picture'] is not None
+                if self._settings['state_config']['picture']
                 else None,
             'car_vector':
                 self.car.get_vector_state().astype(np.float32)
                 if len(self._settings['state_config']['vector_car_features']) != 0
                 else None,
-            'env_vector': self._create_vector_env_static_description(),
+            'env_vector': self._create_vector_env_static_description().astype(np.float32),
         }
 
     def _create_vector_env_static_description(self) -> np.ndarray:
@@ -326,7 +331,7 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
         self._static_env_state_cache = np.array(env_vector, dtype=np.float32)
         return self._static_env_state_cache.copy()
 
-    def get_true_picture(self):
+    def get_true_picture(self) -> np.ndarray:
         return self.picture_state
 
     def render(self, mode='human') -> np.array:
