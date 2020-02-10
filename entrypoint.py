@@ -126,8 +126,13 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--name', type=str, default='test', help='name for experiment')
-    parser.add_argument('--env-settings', type=str, default='test', help='path to CarRacing env settings')
+    parser.add_argument('--name', type=str, help='name for experiment')
+    parser.add_argument(
+        '--env-settings',
+        type=str,
+        default='envs/gym_car_intersect_fixed/settings_sets/env_settings__basic_straight_line.json',
+        help='path to CarRacing env settings',
+    )
     parser.add_argument('--device', type=str, default='cpu', help='path to CarRacing env settings')
     parser.add_argument('--load', type=str, default='none', help='path to load model')
     parser.add_argument('--high-temperature', action='store_true', help='use high temperature keeping')
@@ -137,5 +142,8 @@ if __name__ == "__main__":
         help='ratio of random action for replay buffer pre-fill, useful for loaded agents',
     )
     args = parser.parse_args()
+
+    if args.name is None:
+        raise ValueError('set name')
 
     main(args)
