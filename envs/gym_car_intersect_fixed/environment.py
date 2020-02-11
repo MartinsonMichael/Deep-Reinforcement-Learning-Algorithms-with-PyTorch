@@ -176,7 +176,11 @@ class CarRacingHackatonContinuousFixed(gym.Env, EzPickle):
             world=self.world,
             car_image=self._data_loader.peek_car_image(is_for_agent=True),
             track=DataSupporter.do_with_points(
-                self._data_loader.peek_track(is_for_agent=True, expand_points=50, index=self._preseted_agent_track),
+                self._data_loader.peek_track(
+                    is_for_agent=True,
+                    expand_points=self._settings['reward']['track_checkpoint_expanding'],
+                    index=self._preseted_agent_track
+                ),
                 self._data_loader.convertIMG2PLAY,
             ),
             data_loader=self._data_loader,
